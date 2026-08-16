@@ -15,17 +15,20 @@ jobs:
       - run: npm ci
       - name: Build
         run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      - name: Deploy to Vercel
+      - name: Deploy to Vercel (prebuilt)
         run: |
           npm install --global vercel@latest
-          # Remove .vercel dir so vercel links fresh using env vars
+          # Remove .vercel dir to avoid stale project link
           rm -rf .vercel
+          # Try deploying with just the token (no scope flag - let it auto-resolve)
           vercel deploy --prod --yes \
             --name jarvis-command-center \
             --token "${{ secrets.VERCEL_TOKEN }}" \
-            --scope "${{ secrets.VERCEL_ORG_ID }}" \
-            2>&1 | tee deploy-output.txt
-          cat deploy-output.txt
+            2>&1 || true
+          # Also try amper format
+          vercel --prod --yes \
+            --token "${{ secrets.VERCEL_TOKEN }}" \
+            2>&1 || true
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

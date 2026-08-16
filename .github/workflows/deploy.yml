@@ -20,31 +20,20 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy via Vercel CLI
+      - name: Deploy to Vercel
         env:
-          VTOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VORGID: ${{ secrets.VERCEL_ORG_ID }}
-          VPROJID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_AUTH_JSON_B64: ${{ secrets.VERCEL_AUTH_JSON_B64 }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           npm install --global vercel@latest
-          # Write auth - use shell expansion and explicit path
-          VERCEL_DIR="${HOME}/.vercel"
-          mkdir -p "${VERCEL_DIR}"
-          AUTH_FILE="${VERCEL_DIR}/auth.json"
-          cat > "${AUTH_FILE}" << AUTHEOF
-          {"token":"${VTOKEN}"}
-          AUTHEOF
-          sed -i 's/^ *//' "${AUTH_FILE}"
-          chmod 600 "${AUTH_FILE}"
-          echo "Auth file written to: ${AUTH_FILE}"
-          cat "${AUTH_FILE}" | python3 -c "import sys,json; d=json.load(sys.stdin); print('Token length:', len(d.get('token',''))); print('OK' if d.get('token') else 'FAIL')"
-          # Write project config
+          # Restore auth.json from base64-encoded secret
+          mkdir -p "$HOME/.vercel"
+          echo "$VERCEL_AUTH_JSON_B64" | base64 -d > "$HOME/.vercel/auth.json"
+          chmod 600 "$HOME/.vercel/auth.json"
+          echo "Auth check: $(python3 -c "import json; d=json.load(open('$HOME/.vercel/auth.json')); print('token length:', len(d.get('token','')))")"
+          # Write project link
           mkdir -p .vercel
-          cat > .vercel/project.json << PROJEOF
-          {"projectId":"${VPROJID}","orgId":"${VORGID}"}
-          PROJEOF
-          sed -i 's/^ *//' .vercel/project.json
-          echo "Project file:"
-          cat .vercel/project.json
-          # Deploy with empty VERCEL_TOKEN
-          env VERCEL_TOKEN= vercel deploy --prod --yes 2>&1
+          echo "{\"projectId\":\"$VERCEL_PROJECT_ID\",\"orgId\":\"$VERCEL_ORG_ID\"}" > .vercel/project.json
+          # Deploy
+          env VERCEL_TOKEN="" vercel deploy --prod --yes 2>&1

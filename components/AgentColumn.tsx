@@ -2,42 +2,32 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { AgentCard } from './AgentCard'
-import type { Agent, AgentStatus } from '@/lib/agents'
+import type { LiveAgent, DisplayStatus } from '@/lib/store'
 
 interface AgentColumnProps {
-  status: AgentStatus
+  status: DisplayStatus
   label: string
   emoji: string
-  agents: Agent[]
+  agents: LiveAgent[]
 }
 
-const columnStyles: Record<AgentStatus, {
+const columnStyles: Record<DisplayStatus, {
   headerBg: string
   headerText: string
-  borderTop: string
   countBg: string
   countText: string
 }> = {
   active: {
     headerBg: 'bg-active/10',
     headerText: 'text-active',
-    borderTop: 'border-t-active',
     countBg: 'bg-active/20',
     countText: 'text-active',
   },
-  queued: {
+  idle: {
     headerBg: 'bg-queued/10',
     headerText: 'text-queued',
-    borderTop: 'border-t-queued',
     countBg: 'bg-queued/20',
     countText: 'text-queued',
-  },
-  completed: {
-    headerBg: 'bg-completed/10',
-    headerText: 'text-completed',
-    borderTop: 'border-t-completed',
-    countBg: 'bg-completed/20',
-    countText: 'text-completed',
   },
 }
 
@@ -75,7 +65,7 @@ export function AgentColumn({ status, label, emoji, agents }: AgentColumnProps) 
 
         {agents.length === 0 && (
           <div className="flex items-center justify-center h-24 text-gray-600 text-xs tracking-wider">
-            NO AGENTS
+            {status === 'active' ? 'NO ACTIVE AGENTS' : 'ALL AGENTS IDLE'}
           </div>
         )}
       </div>

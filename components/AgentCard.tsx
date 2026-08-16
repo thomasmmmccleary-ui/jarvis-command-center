@@ -3,47 +3,26 @@
 import { motion } from 'framer-motion'
 import { AgentAvatar } from './AgentAvatar'
 import { StatusBadge } from './StatusBadge'
-import type { Agent } from '@/lib/agents'
+import type { LiveAgent } from '@/lib/store'
 
 interface AgentCardProps {
-  agent: Agent
+  agent: LiveAgent
 }
 
-const MOCK_TASKS: Record<string, string[]> = {
-  active: [
-    'Analyzing market signals…',
-    'Generating content draft…',
-    'Processing data pipeline…',
-    'Running competitive scan…',
-    'Building strategy framework…',
-    'Synthesizing research…',
-    'Optimizing copy variants…',
-    'Evaluating audience fit…',
-  ],
-  queued: [
-    'Awaiting mission brief',
-    'In queue — ready',
-    'Standing by for task',
-    'Pending assignment',
-  ],
-  completed: [
-    'Task delivered ✓',
-    'Report submitted ✓',
-    'Analysis complete ✓',
-    'Draft approved ✓',
-    'Mission accomplished ✓',
-  ],
-}
-
-function getTaskText(agent: Agent): string {
-  if (agent.currentTask) return agent.currentTask
-  const pool = MOCK_TASKS[agent.status] || MOCK_TASKS.queued
-  const idx = agent.id.length % pool.length
-  return pool[idx]
+function formatAge(isoString?: string): string {
+  if (!isoString) return ''
+  const diff = Date.now() - new Date(isoString).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
 }
 
 export function AgentCard({ agent }: AgentCardProps) {
-  const taskText = getTaskText(agent)
+  const taskText = agent.currentTask ?? (agent.status === 'active' ? 'Running…' : 'Idle')
+  const ageLabel = formatAge(agent.lastActiveAt)
 
   return (
     <motion.div
@@ -57,16 +36,21 @@ export function AgentCard({ agent }: AgentCardProps) {
       className="group relative rounded-lg border border-border bg-surface p-3 cursor-default shadow-card hover:shadow-card-hover hover:border-gray-700 transition-colors"
     >
       <div className="flex items-start gap-3">
-        <AgentAvatar agent={agent} />
+        <AgentAvatar agent={{ id: agent.id, name: agent.name, category: agent.category, status: agent.status === 'active' ? 'active' : 'queued' }} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1">
             <p className="text-sm font-medium text-white truncate">{agent.name}</p>
-            <StatusBadge status={agent.status} />
+            <StatusBadge status={agent.status === 'active' ? 'active' : 'queued'} />
           </div>
           <p className="text-xs text-gray-500 truncate font-mono">{taskText}</p>
-          {agent.category && (
-            <p className="text-xs text-gray-600 mt-1 truncate">{agent.category}</p>
-          )}
+          <div className="flex items-center justify-between mt-1">
+            {agent.category && (
+              <p className="text-xs text-gray-600 truncate">{agent.category}</p>
+            )}
+            {ageLabel && (
+              <p className="text-xs text-gray-700 font-mono ml-2 shrink-0">{ageLabel}</p>
+            )}
+          </div>
         </div>
       </div>
 

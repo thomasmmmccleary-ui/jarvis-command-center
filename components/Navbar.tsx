@@ -6,6 +6,7 @@ import { useAgentStore } from '@/lib/store'
 export function Navbar() {
   const { agents } = useAgentStore()
   const activeCount = agents.filter(a => a.status === 'active').length
+  const totalCount = agents.length
   const now = new Date()
   const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 
@@ -41,7 +42,7 @@ export function Navbar() {
               transition={{ duration: 1.5, repeat: Infinity }}
             />
             <span className="text-xs text-gray-400 font-mono">
-              {activeCount > 0 ? `${activeCount} AGENTS ACTIVE` : 'STANDBY'}
+              {activeCount > 0 ? `${activeCount} AGENT${activeCount !== 1 ? 'S' : ''} ACTIVE` : 'STANDBY — NO ACTIVE AGENTS'}
             </span>
           </div>
 
@@ -53,7 +54,7 @@ export function Navbar() {
             </div>
             <div className="px-3 py-1.5 rounded-lg bg-active/10 border border-active/20">
               <span className="text-xs font-mono text-active font-semibold">
-                {agents.length} SPECIALISTS
+                {totalCount > 0 ? `${totalCount} SPECIALISTS` : 'LOADING…'}
               </span>
             </div>
           </div>

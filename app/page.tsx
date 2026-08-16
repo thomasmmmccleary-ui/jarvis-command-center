@@ -5,16 +5,15 @@ import { Navbar } from '@/components/Navbar'
 import { StatsBar } from '@/components/StatsBar'
 import { KanbanBoard } from '@/components/KanbanBoard'
 import { useAgentStore } from '@/lib/store'
-import { ALL_AGENTS } from '@/lib/agents'
 
 export default function Home() {
-  const { initAgents, startSimulation } = useAgentStore()
+  const { startPolling } = useAgentStore()
 
   useEffect(() => {
-    initAgents(ALL_AGENTS)
-    const cleanup = startSimulation()
+    // Start polling real agent data; cleanup stops the interval on unmount
+    const cleanup = startPolling(10_000)
     return cleanup
-  }, [initAgents, startSimulation])
+  }, [startPolling])
 
   return (
     <main className="min-h-screen bg-background">

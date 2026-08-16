@@ -6,9 +6,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -17,22 +14,16 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Setup Vercel auth
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          npm install --global vercel@latest
-          mkdir -p ~/.vercel
-          echo "{\"token\":\"${VERCEL_TOKEN}\"}" > ~/.vercel/auth.json
-          chmod 600 ~/.vercel/auth.json
-
-      - name: Write Vercel project config
-        run: |
-          mkdir -p .vercel
-          echo '{"projectId":"'"${VERCEL_PROJECT_ID}"'","orgId":"'"${VERCEL_ORG_ID}"'"}' > .vercel/project.json
+      - name: Build
+        run: npm run build
 
       - name: Deploy to Vercel
-        run: |
-          vercel deploy --prod --yes 2>&1
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'

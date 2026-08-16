@@ -20,19 +20,31 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy via Vercel CLI (latest)
+      - name: Deploy via Vercel CLI
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VTOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VORGID: ${{ secrets.VERCEL_ORG_ID }}
+          VPROJID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           npm install --global vercel@latest
-          # Use auth.json for vck_ token (CLI OIDC token format)
-          mkdir -p "$HOME/.vercel"
-          printf '{"token":"%s"}' "$VERCEL_TOKEN" > "$HOME/.vercel/auth.json"
-          chmod 600 "$HOME/.vercel/auth.json"
-          # Write project.json to link correct project
+          # Write auth - use shell expansion and explicit path
+          VERCEL_DIR="${HOME}/.vercel"
+          mkdir -p "${VERCEL_DIR}"
+          AUTH_FILE="${VERCEL_DIR}/auth.json"
+          cat > "${AUTH_FILE}" << AUTHEOF
+          {"token":"${VTOKEN}"}
+          AUTHEOF
+          sed -i 's/^ *//' "${AUTH_FILE}"
+          chmod 600 "${AUTH_FILE}"
+          echo "Auth file written to: ${AUTH_FILE}"
+          cat "${AUTH_FILE}" | python3 -c "import sys,json; d=json.load(sys.stdin); print('Token length:', len(d.get('token',''))); print('OK' if d.get('token') else 'FAIL')"
+          # Write project config
           mkdir -p .vercel
-          printf '{"projectId":"%s","orgId":"%s"}' "$VERCEL_PROJECT_ID" "$VERCEL_ORG_ID" > .vercel/project.json
-          # Clear VERCEL_TOKEN so CLI uses auth.json
-          VERCEL_TOKEN= vercel deploy --prod --yes 2>&1
+          cat > .vercel/project.json << PROJEOF
+          {"projectId":"${VPROJID}","orgId":"${VORGID}"}
+          PROJEOF
+          sed -i 's/^ *//' .vercel/project.json
+          echo "Project file:"
+          cat .vercel/project.json
+          # Deploy with empty VERCEL_TOKEN
+          env VERCEL_TOKEN= vercel deploy --prod --yes 2>&1

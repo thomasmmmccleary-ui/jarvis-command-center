@@ -6,6 +6,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -16,19 +19,20 @@ jobs:
 
       - run: npm ci
 
-      - name: Deploy to Vercel
-        run: |
-          npm install --global vercel@latest
-          # Write auth.json so CLI uses vck_ token correctly (avoids --token flag issue)
-          mkdir -p ~/.vercel
-          echo "{\"token\":\"$VERCEL_TOKEN\"}" > ~/.vercel/auth.json
-          # Write project.json so CLI links to existing project (avoid scope flag)
-          mkdir -p .vercel
-          echo "{\"projectId\":\"$VERCEL_PROJECT_ID\",\"orgId\":\"$VERCEL_ORG_ID\"}" > .vercel/project.json
-          # Deploy - unset VERCEL_TOKEN env var so CLI reads from auth.json
-          unset VERCEL_TOKEN
-          vercel deploy --prod --yes 2>&1
+      - name: Setup Vercel auth
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npm install --global vercel@latest
+          mkdir -p ~/.vercel
+          echo "{\"token\":\"${VERCEL_TOKEN}\"}" > ~/.vercel/auth.json
+          chmod 600 ~/.vercel/auth.json
+
+      - name: Write Vercel project config
+        run: |
+          mkdir -p .vercel
+          echo '{"projectId":"'"${VERCEL_PROJECT_ID}"'","orgId":"'"${VERCEL_ORG_ID}"'"}' > .vercel/project.json
+
+      - name: Deploy to Vercel
+        run: |
+          vercel deploy --prod --yes 2>&1

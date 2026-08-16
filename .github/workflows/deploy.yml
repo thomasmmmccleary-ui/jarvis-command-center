@@ -8,27 +8,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+
       - run: npm ci
-      - name: Build
-        run: npm run build
-      - name: Deploy to Vercel (prebuilt)
+
+      - name: Deploy to Vercel
         run: |
           npm install --global vercel@latest
-          # Remove .vercel dir to avoid stale project link
-          rm -rf .vercel
-          # Try deploying with just the token (no scope flag - let it auto-resolve)
+          # Write auth.json so CLI uses vck_ token correctly
+          mkdir -p ~/.vercel
+          echo '{"token":"'"$VERCEL_TOKEN"'"}' > ~/.vercel/auth.json
+          # Deploy (unset VERCEL_TOKEN env so CLI reads from auth.json)
+          unset VERCEL_TOKEN
           vercel deploy --prod --yes \
-            --name jarvis-command-center \
-            --token "${{ secrets.VERCEL_TOKEN }}" \
-            2>&1 || true
-          # Also try amper format
-          vercel --prod --yes \
-            --token "${{ secrets.VERCEL_TOKEN }}" \
-            2>&1 || true
+            --scope "$VERCEL_ORG_ID" \
+            2>&1
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

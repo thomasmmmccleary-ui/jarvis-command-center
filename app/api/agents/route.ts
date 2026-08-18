@@ -7,8 +7,13 @@ export interface LiveAgent {
   id: string
   name: string
   category: string
-  status: 'active' | 'idle'
+  // 'waiting' = blocked on approval or on another agent (e.g. a parent
+  // mission waiting on a subagent it spawned) — distinct from 'idle' so the
+  // dashboard can show *why* an agent isn't actively working.
+  status: 'active' | 'idle' | 'waiting'
   currentTask?: string
+  waitingReason?: string
+  parentMission?: string
   sessionKey?: string
   sessionId?: string
   startedAt?: string
@@ -40,11 +45,23 @@ function categoryForToolsProfile(profile?: string): string {
   return profile.charAt(0).toUpperCase() + profile.slice(1)
 }
 
+interface ActiveWorkItem {
+  sessionKey: string
+  agentId: string
+  agentName: string
+  task: string
+  startedAt: string | null
+  tokens: number
+  contextPct?: number
+  parentMission?: string
+}
+
 export async function GET() {
   try {
-    const [agentsData, statusData] = await Promise.all([
+    const [agentsData, statusData, dashboardSummary] = await Promise.all([
       bridgeFetch('/api/agents'),
       bridgeFetch('/api/live-status'),
+      bridgeFetch('/api/dashboard-summary'),
     ])
 
     const statuses: Record<
@@ -55,27 +72,47 @@ export async function GET() {
     const rawAgents: Array<{ id: string; name: string; model?: string; toolsProfile?: string }> =
       agentsData.agents ?? []
 
+    // dashboard-summary's activeWork carries the *real* task text (read
+    // straight from the session transcript) plus which parent mission a
+    // subagent is working for — live-status only has a status enum, no
+    // detail. Latest session per agentId wins.
+    const activeWork: ActiveWorkItem[] = dashboardSummary?.activeWork ?? []
+    const activeWorkByAgent = new Map<string, ActiveWorkItem>()
+    for (const w of activeWork) {
+      if (!activeWorkByAgent.has(w.agentId)) activeWorkByAgent.set(w.agentId, w)
+    }
+
     const agents: LiveAgent[] = rawAgents.map((a) => {
       const live = statuses[a.id]
+      const work = activeWorkByAgent.get(a.id)
       const isActive = live?.status === 'working'
+      const isWaiting = live?.status === 'waiting'
+      const status: LiveAgent['status'] = isActive ? 'active' : isWaiting ? 'waiting' : 'idle'
       return {
         id: a.id,
         name: a.id === 'main' ? 'J.A.R.V.I.S.' : a.name,
         category: categoryForToolsProfile(a.toolsProfile),
-        status: isActive ? 'active' : 'idle',
-        currentTask: isActive ? 'Processing request' : undefined,
+        status,
+        currentTask: isActive ? work?.task ?? 'Processing request' : undefined,
+        waitingReason: isWaiting ? (live?.rawStatus === 'waiting_approval' ? 'Waiting on your approval' : 'Blocked — waiting on another agent') : undefined,
+        parentMission: work?.parentMission,
+        startedAt: work?.startedAt ?? undefined,
+        tokens: work?.tokens,
+        contextPct: work?.contextPct,
         model: a.model,
         lastActiveAt: live?.lastInteractionAt ? new Date(live.lastInteractionAt).toISOString() : undefined,
       }
     })
 
     const activeCount = agents.filter((a) => a.status === 'active').length
+    const waitingCount = agents.filter((a) => a.status === 'waiting').length
 
     return NextResponse.json({
       fetchedAt: new Date().toISOString(),
       totalSessions: agents.length,
       activeCount,
-      idleCount: agents.length - activeCount,
+      waitingCount,
+      idleCount: agents.length - activeCount - waitingCount,
       totalAgents: agents.length,
       agents,
     })
@@ -88,6 +125,7 @@ export async function GET() {
         fetchedAt: new Date().toISOString(),
         totalSessions: 0,
         activeCount: 0,
+        waitingCount: 0,
         idleCount: 0,
         totalAgents: 0,
         agents: [],

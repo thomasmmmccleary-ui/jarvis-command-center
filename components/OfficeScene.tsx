@@ -322,9 +322,16 @@ function ActiveAgentCard({ agent, index }: { agent: LiveAgent; index: number }) 
       {agent.currentTask && (
         <div
           title={agent.currentTask}
-          style={{ fontSize: 9.5, color: 'rgba(148,163,184,0.70)', lineHeight: 1.5, marginBottom: 8, borderLeft: `2px solid rgba(${hexToRgb(color)},0.30)`, paddingLeft: 8, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}
+          style={{ fontSize: 9.5, color: 'rgba(148,163,184,0.70)', lineHeight: 1.5, marginBottom: agent.parentMission ? 4 : 8, borderLeft: `2px solid rgba(${hexToRgb(color)},0.30)`, paddingLeft: 8, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}
         >
           {agent.currentTask}
+        </div>
+      )}
+
+      {/* Parent mission — this agent was spawned by another agent's task */}
+      {agent.parentMission && (
+        <div style={{ fontSize: 8, color: 'rgba(148,163,184,0.45)', marginBottom: 8, paddingLeft: 8, fontFamily: 'JetBrains Mono, monospace' }}>
+          ↳ working for: {agent.parentMission}
         </div>
       )}
 
@@ -345,6 +352,46 @@ function ActiveAgentCard({ agent, index }: { agent: LiveAgent; index: number }) 
           style={{ height: '100%', background: `linear-gradient(90deg, rgba(${hexToRgb(color)},0.4), ${color})`, borderRadius: 2 }}
         />
       </div>
+    </motion.div>
+  )
+}
+
+// Amber-themed card for agents blocked on approval or on another agent —
+// distinct from idle so it's obvious this isn't "nothing happening", it's
+// "something else has to finish or you have to respond first."
+function WaitingAgentCard({ agent, index }: { agent: LiveAgent; index: number }) {
+  const color = '#f59e0b'
+  const initials = agent.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      transition={{ delay: index * 0.08, type: 'spring', stiffness: 300, damping: 25 }}
+      style={{
+        background: `linear-gradient(135deg, rgba(${hexToRgb(color)},0.07) 0%, rgba(5,5,16,0.95) 100%)`,
+        border: `1px solid rgba(${hexToRgb(color)},0.28)`,
+        borderRadius: 10, padding: '11px 13px', marginBottom: 7,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 6 }}>
+        <AgentAvatarShape color={color} initials={initials} shapeIdx={index} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>
+            {agent.name}
+          </div>
+          <div style={{ fontSize: 8, color: 'rgba(148,163,184,0.45)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: 0.5 }}>
+            {agent.category}
+          </div>
+        </div>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
+      </div>
+      {agent.waitingReason && (
+        <div style={{ fontSize: 9.5, color: 'rgba(245,158,11,0.75)', lineHeight: 1.5, borderLeft: `2px solid rgba(${hexToRgb(color)},0.30)`, paddingLeft: 8 }}>
+          ⏳ {agent.waitingReason}
+        </div>
+      )}
     </motion.div>
   )
 }
@@ -988,8 +1035,9 @@ export default function OfficeScene() {
     }
   }, [activity?.recentCompleted?.length])
 
-  const activeAgents = useMemo(() => agents.filter(a => a.status === 'active'), [agents])
-  const idleAgents   = useMemo(() => agents.filter(a => a.status === 'idle'),   [agents])
+  const activeAgents  = useMemo(() => agents.filter(a => a.status === 'active'),  [agents])
+  const waitingAgents = useMemo(() => agents.filter(a => a.status === 'waiting'), [agents])
+  const idleAgents    = useMemo(() => agents.filter(a => a.status === 'idle'),    [agents])
 
   return (
     <div
@@ -1182,6 +1230,22 @@ export default function OfficeScene() {
               </div>
             )}
           </div>
+
+          {/* Waiting agents — blocked on approval or on another agent finishing. Only rendered when non-empty so it doesn't add noise on a quiet day. */}
+          {waitingAgents.length > 0 && (
+            <>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '6px 0' }} />
+              <div style={{ padding: '10px 11px 6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div className="zone-label" style={{ fontSize: 7.5, color: '#f59e0b', textShadow: '0 0 10px rgba(245,158,11,0.5)' }}>⏳ WAITING</div>
+                  <div style={{ color: '#f59e0b', fontSize: 9, padding: '2px 8px', borderRadius: 12, border: '1px solid rgba(245,158,11,0.22)', fontFamily: 'JetBrains Mono, monospace' }}>
+                    {waitingAgents.length}
+                  </div>
+                </div>
+                {waitingAgents.slice(0, 6).map((ag, i) => <WaitingAgentCard key={ag.id} agent={ag} index={i} />)}
+              </div>
+            </>
+          )}
 
           {/* Divider */}
           <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '6px 0' }} />

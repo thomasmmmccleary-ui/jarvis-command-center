@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: '/'        , label: 'Office',   icon: '🏢' },
   { href: '/team'    , label: 'Team'    , icon: '👥' },
   { href: '/tasks'   , label: 'Tasks'   , icon: '✅' },
+  { href: '/missions', label: 'Missions', icon: '🔗' },
   { href: '/calendar', label: 'Calendar', icon: '📅' },
   { href: '/memory'  , label: 'Memory'  , icon: '🧠' },
 ]

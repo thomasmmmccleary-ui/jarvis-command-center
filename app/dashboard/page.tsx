@@ -283,7 +283,7 @@ export default function DashboardPage() {
         {/* Top accent line */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #00f5ff 20%, #7c3aed 50%, #ec4899 80%, transparent)', opacity: 0.4 }} />
         {[
-          { label: 'TOTAL AGENTS',   value: agents.length || 111, color: '#7c3aed', icon: '🤖', delay: 0 },
+          { label: 'TOTAL AGENTS',   value: agents.length, color: '#7c3aed', icon: '🤖', delay: 0 },
           { label: 'ACTIVE NOW',     value: activeAgents.length,   color: '#00f5ff', icon: '⚡', delay: 0.05 },
           { label: 'MISSIONS TODAY', value: missionsToday,          color: '#10b981', icon: '🎯', delay: 0.1 },
           { label: 'TOKENS TODAY',   value: tokensToday > 0 ? `${(tokensToday/1000).toFixed(1)}k` : '—', color: '#f97316', icon: '🔢', delay: 0.15 },

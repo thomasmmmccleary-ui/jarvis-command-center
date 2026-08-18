@@ -26,7 +26,11 @@ export interface AgentStore {
   startPolling: (intervalMs?: number) => () => void
 }
 
-const POLL_INTERVAL_MS = 10_000
+// The bridge used to shell out to `openclaw sessions` on every request
+// (multi-second) which made fast polling actively harmful. It now serves
+// from an in-memory snapshot refreshed every 4s, so 3s polling is safe and
+// gives a near-real-time feel without hammering the box.
+const POLL_INTERVAL_MS = 3_000
 
 export const useAgentStore = create<AgentStore>((set, get) => ({
   agents: [],

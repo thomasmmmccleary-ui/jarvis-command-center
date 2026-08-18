@@ -52,6 +52,7 @@ export interface CompletedItem {
 export interface ActivitySummary {
   fetchedAt: string
   dataSource: string
+  bridgeStartedAt?: string
   today: {
     missionsRun: number
     subagentsLaunched: number

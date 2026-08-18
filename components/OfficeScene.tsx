@@ -123,13 +123,23 @@ function LiveClock() {
 }
 
 // ─── Uptime counter ───────────────────────────────────────────────────────
-function UptimeCounter() {
-  const [start] = useState(() => Date.now())
+// Was computing elapsed from `Date.now()` captured at component MOUNT, so
+// it reset to 00:00:00 on every page refresh and never reflected anything
+// real — just "how long this browser tab has been open," mislabeled
+// "UPTIME". Now takes the bridge's actual process start time (bridge
+// restarts are rare — only on deploys/crashes) so the number means what the
+// label says.
+function UptimeCounter({ bridgeStartedAt }: { bridgeStartedAt?: string }) {
   const [elapsed, setElapsed] = useState(0)
   useEffect(() => {
-    const t = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000)
+    if (!bridgeStartedAt) return
+    const startMs = new Date(bridgeStartedAt).getTime()
+    const tick = () => setElapsed(Math.max(0, Math.floor((Date.now() - startMs) / 1000)))
+    tick()
+    const t = setInterval(tick, 1000)
     return () => clearInterval(t)
-  }, [start])
+  }, [bridgeStartedAt])
+  if (!bridgeStartedAt) return <span style={{ fontFamily: 'JetBrains Mono, monospace', opacity: 0.4 }}>—</span>
   const h = Math.floor(elapsed / 3600).toString().padStart(2, '0')
   const m = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0')
   const s = (elapsed % 60).toString().padStart(2, '0')
@@ -208,7 +218,7 @@ function StatsHeader({
     { label: 'ON STANDBY',   value: idleCount,            color: '#f59e0b', icon: '☕', spark: null },
     { label: 'DONE TODAY',   value: done,                 color: '#10b981', icon: '✅', spark: null },
     { label: 'TOKENS',       value: tokens > 0 ? `${(tokens / 1000).toFixed(1)}k` : '—', color: '#f97316', icon: '🔢', spark: null },
-    { label: 'UPTIME',       value: <UptimeCounter />,   color: '#94a3b8', icon: '⏱', spark: null },
+    { label: 'BRIDGE UPTIME', value: <UptimeCounter bridgeStartedAt={activity?.bridgeStartedAt} />, color: '#94a3b8', icon: '⏱', spark: null },
   ]
 
   return (
@@ -231,7 +241,7 @@ function StatsHeader({
             <span>{s.label}</span>
           </div>
           <div style={{ fontSize: 24, fontWeight: 900, color: s.color, fontFamily: 'JetBrains Mono, monospace', textShadow: `0 0 16px ${s.color}80, 0 0 32px ${s.color}30`, lineHeight: 1.1 }}>
-            <AnimatedCounter value={s.value as string | number} loading={loading && s.label !== 'UPTIME'} />
+            <AnimatedCounter value={s.value as string | number} loading={loading && s.label !== 'BRIDGE UPTIME'} />
           </div>
           {s.spark && (
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>

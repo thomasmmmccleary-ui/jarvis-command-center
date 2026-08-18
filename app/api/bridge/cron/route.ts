@@ -17,8 +17,13 @@ export async function GET() {
     })
     if (!res.ok) throw new Error(`Bridge /api/cron returned ${res.status}`)
     const data = await res.json()
-    return NextResponse.json(data)
+    // Bridge returns { cron: [...] } — cron is a bare array. The calendar
+    // page used to read data.cron?.jobs (a nested .jobs that never
+    // existed), so it silently showed zero cron jobs even when jobs were
+    // running. Normalize to a plain array here so the shape is unambiguous
+    // on both the success and error paths.
+    return NextResponse.json({ cron: Array.isArray(data.cron) ? data.cron : [] })
   } catch (err) {
-    return NextResponse.json({ error: String(err), cron: { jobs: [] } }, { status: 500 })
+    return NextResponse.json({ error: String(err), cron: [] }, { status: 500 })
   }
 }

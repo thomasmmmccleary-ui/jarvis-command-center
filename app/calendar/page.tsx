@@ -268,7 +268,7 @@ export default function CalendarPage() {
       const res = await fetch('/api/bridge/cron', { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
-      setJobs(data.cron?.jobs ?? [])
+      setJobs(Array.isArray(data.cron) ? data.cron : [])
       setLastUpdated(new Date().toLocaleTimeString())
       setError(null)
     } catch (err) {

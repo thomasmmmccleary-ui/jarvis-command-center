@@ -10,7 +10,12 @@ export interface LiveAgent {
   // 'waiting' = blocked on approval or on another agent (e.g. a parent
   // mission waiting on a subagent it spawned) — distinct from 'idle' so the
   // dashboard can show *why* an agent isn't actively working.
-  status: 'active' | 'idle' | 'waiting'
+  // 'failed' = the agent's last turn crashed internally (recency-gated to
+  // 30 min on the bridge side). Caught this live: a turn failed right
+  // after a subagent returned, and Slack got total silence — no error, no
+  // reply, nothing. Without this the dashboard folded that into plain
+  // "idle" and gave no sign anything had gone wrong.
+  status: 'active' | 'idle' | 'waiting' | 'failed'
   currentTask?: string
   waitingReason?: string
   parentMission?: string
@@ -66,7 +71,7 @@ export async function GET() {
 
     const statuses: Record<
       string,
-      { status: 'working' | 'idle' | 'waiting'; rawStatus: string; lastInteractionAt?: number }
+      { status: 'working' | 'idle' | 'waiting' | 'failed'; rawStatus: string; lastInteractionAt?: number }
     > = statusData.agents ?? {}
 
     const rawAgents: Array<{ id: string; name: string; model?: string; toolsProfile?: string }> =
@@ -87,14 +92,15 @@ export async function GET() {
       const work = activeWorkByAgent.get(a.id)
       const isActive = live?.status === 'working'
       const isWaiting = live?.status === 'waiting'
-      const status: LiveAgent['status'] = isActive ? 'active' : isWaiting ? 'waiting' : 'idle'
+      const isFailed = live?.status === 'failed'
+      const status: LiveAgent['status'] = isActive ? 'active' : isWaiting ? 'waiting' : isFailed ? 'failed' : 'idle'
       return {
         id: a.id,
         name: a.id === 'main' ? 'J.A.R.V.I.S.' : a.name,
         category: categoryForToolsProfile(a.toolsProfile),
         status,
         currentTask: isActive ? work?.task ?? 'Processing request' : undefined,
-        waitingReason: isWaiting ? (live?.rawStatus === 'waiting_approval' ? 'Waiting on your approval' : 'Blocked — waiting on another agent') : undefined,
+        waitingReason: isWaiting ? (live?.rawStatus === 'waiting_approval' ? 'Waiting on your approval' : 'Blocked — waiting on another agent') : isFailed ? 'Last turn failed — no reply was sent' : undefined,
         parentMission: work?.parentMission,
         startedAt: work?.startedAt ?? undefined,
         tokens: work?.tokens,
@@ -106,13 +112,15 @@ export async function GET() {
 
     const activeCount = agents.filter((a) => a.status === 'active').length
     const waitingCount = agents.filter((a) => a.status === 'waiting').length
+    const failedCount = agents.filter((a) => a.status === 'failed').length
 
     return NextResponse.json({
       fetchedAt: new Date().toISOString(),
       totalSessions: agents.length,
       activeCount,
       waitingCount,
-      idleCount: agents.length - activeCount - waitingCount,
+      failedCount,
+      idleCount: agents.length - activeCount - waitingCount - failedCount,
       totalAgents: agents.length,
       agents,
     })
@@ -126,6 +134,7 @@ export async function GET() {
         totalSessions: 0,
         activeCount: 0,
         waitingCount: 0,
+        failedCount: 0,
         idleCount: 0,
         totalAgents: 0,
         agents: [],

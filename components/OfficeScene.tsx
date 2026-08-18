@@ -412,6 +412,51 @@ function WaitingAgentCard({ agent, index }: { agent: LiveAgent; index: number })
   )
 }
 
+// Red-themed card for an agent whose last turn crashed internally — caught
+// this live: a turn failed right after a subagent returned its result, and
+// Slack got total silence, no error, no reply. This card is the only place
+// on the dashboard that surfaces "something broke and Thomas was never
+// told" instead of it silently reading as idle.
+function FailedAgentCard({ agent, index }: { agent: LiveAgent; index: number }) {
+  const color = '#ef4444'
+  const initials = agent.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      transition={{ delay: index * 0.08, type: 'spring', stiffness: 300, damping: 25 }}
+      style={{
+        background: `linear-gradient(135deg, rgba(${hexToRgb(color)},0.09) 0%, rgba(5,5,16,0.95) 100%)`,
+        border: `1px solid rgba(${hexToRgb(color)},0.35)`,
+        borderRadius: 10, padding: '11px 13px', marginBottom: 7,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 6 }}>
+        <AgentAvatarShape color={color} initials={initials} shapeIdx={index} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'Inter, sans-serif' }}>
+            {agent.name}
+          </div>
+          <div style={{ fontSize: 8, color: 'rgba(148,163,184,0.45)', fontFamily: 'JetBrains Mono, monospace', letterSpacing: 0.5 }}>
+            {agent.category}
+          </div>
+        </div>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
+      </div>
+      <div style={{ fontSize: 9.5, color: 'rgba(239,68,68,0.85)', lineHeight: 1.5, borderLeft: `2px solid rgba(${hexToRgb(color)},0.35)`, paddingLeft: 8 }}>
+        ‼ {agent.waitingReason ?? 'Last turn failed'}
+      </div>
+      {agent.lastActiveAt && (
+        <div style={{ fontSize: 7.5, color: 'rgba(148,163,184,0.4)', marginTop: 5, fontFamily: 'JetBrains Mono, monospace' }}>
+          at {new Date(agent.lastActiveAt).toLocaleTimeString()}
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
 // ─── HUD Zone Header with Orbitron ────────────────────────────────────────
 function ZoneHeader({ icon, label, count, color, badge }: { icon: string; label: string; count: string; color: string; badge?: string }) {
   return (
@@ -1095,6 +1140,7 @@ export default function OfficeScene() {
     }))
   }, [activity?.activeWork, agents, categoryByAgentId])
   const waitingAgents = useMemo(() => agents.filter(a => a.status === 'waiting'), [agents])
+  const failedAgents  = useMemo(() => agents.filter(a => a.status === 'failed'), [agents])
   const idleAgents    = useMemo(() => agents.filter(a => a.status === 'idle'),    [agents])
   // The 3D office floor animates roster AGENTS (one sprite per agent id), not
   // sessions — it has no concept of "two sprites for the same agent because
@@ -1296,6 +1342,22 @@ export default function OfficeScene() {
               </div>
             )}
           </div>
+
+          {/* Recent failures — a turn that crashed silently, no Slack reply ever sent. Shown first since this is the most important thing to notice. */}
+          {failedAgents.length > 0 && (
+            <>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '6px 0' }} />
+              <div style={{ padding: '10px 11px 6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div className="zone-label" style={{ fontSize: 7.5, color: '#ef4444', textShadow: '0 0 10px rgba(239,68,68,0.5)' }}>‼ RECENT FAILURES</div>
+                  <div style={{ color: '#ef4444', fontSize: 9, padding: '2px 8px', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', fontFamily: 'JetBrains Mono, monospace' }}>
+                    {failedAgents.length}
+                  </div>
+                </div>
+                {failedAgents.slice(0, 6).map((ag, i) => <FailedAgentCard key={ag.id} agent={ag} index={i} />)}
+              </div>
+            </>
+          )}
 
           {/* Waiting agents — blocked on approval or on another agent finishing. Only rendered when non-empty so it doesn't add noise on a quiet day. */}
           {waitingAgents.length > 0 && (

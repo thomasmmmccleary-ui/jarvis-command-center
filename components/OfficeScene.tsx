@@ -205,16 +205,17 @@ function StatsHeader({
   const done        = activity?.today?.completedMissions?.length ?? 0
   const tokens      = activity?.today?.tokensUsed ?? 0
 
-  // Mock sparkline data (based on real active count + some variation)
-  const sparkData = useMemo(() => {
-    const base = activeCount || 1
-    return Array.from({ length: 8 }, (_, i) => Math.max(0, base - i + Math.floor(Math.random() * 2)))
-      .reverse()
-  }, [activeCount])
-
+  // The "ACTIVE NOW" tile used to render a sparkline built from
+  // Math.random() jitter around the real count, dressed up with a comment
+  // claiming it was "based on real ... + some variation" — it wasn't a
+  // trend, it was fabricated noise with no historical data behind it at
+  // all. The bridge doesn't track active-count-over-time, so rather than
+  // fake a shape, this tile just doesn't render a sparkline. TOTAL AGENTS'
+  // flat line is fine to keep — it's 8 copies of the one real current
+  // value, not synthesized variation.
   const stats = [
     { label: 'TOTAL AGENTS', value: agents.length, color: '#7c3aed', icon: '🤖', spark: Array(8).fill(agents.length) },
-    { label: 'ACTIVE NOW',   value: activeCount,          color: '#00f5ff', icon: '⚡', spark: sparkData },
+    { label: 'ACTIVE NOW',   value: activeCount,          color: '#00f5ff', icon: '⚡', spark: null },
     { label: 'ON STANDBY',   value: idleCount,            color: '#f59e0b', icon: '☕', spark: null },
     { label: 'DONE TODAY',   value: done,                 color: '#10b981', icon: '✅', spark: null },
     { label: 'TOKENS',       value: tokens > 0 ? `${(tokens / 1000).toFixed(1)}k` : '—', color: '#f97316', icon: '🔢', spark: null },
@@ -428,15 +429,20 @@ function ZoneHeader({ icon, label, count, color, badge }: { icon: string; label:
 }
 
 // ─── SYSTEM ONLINE indicator ──────────────────────────────────────────────
-function SystemOnlineBadge() {
+// Reflects the actual result of the last poll — was a hardcoded green label
+// with no data check before, so it kept claiming "online" through real
+// outages (the bridge tunnel died more than once during today's testing).
+function SystemOnlineBadge({ online }: { online: boolean }) {
+  const color = online ? '#10b981' : '#ef4444'
+  const label = online ? 'SYSTEM ONLINE' : 'SYSTEM OFFLINE'
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
       <div style={{ position: 'relative' }}>
-        <div className="online-ping" style={{ width: 9, height: 9, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
-        <div style={{ position: 'absolute', inset: -2, borderRadius: '50%', border: '1px solid rgba(16,185,129,0.4)', animation: 'ring-pulse 2s ease-out infinite' }} />
+        <div className={online ? 'online-ping' : undefined} style={{ width: 9, height: 9, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}` }} />
+        <div style={{ position: 'absolute', inset: -2, borderRadius: '50%', border: `1px solid ${online ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.5)'}`, animation: online ? 'ring-pulse 2s ease-out infinite' : undefined }} />
       </div>
-      <span style={{ fontSize: 8.5, color: '#10b981', fontFamily: 'JetBrains Mono, monospace', letterSpacing: 1.5, fontWeight: 700, textShadow: '0 0 8px rgba(16,185,129,0.6)' }}>
-        SYSTEM ONLINE
+      <span style={{ fontSize: 8.5, color, fontFamily: 'JetBrains Mono, monospace', letterSpacing: 1.5, fontWeight: 700, textShadow: `0 0 8px ${color}99` }}>
+        {label}
       </span>
     </div>
   )
@@ -1012,15 +1018,25 @@ export default function OfficeScene() {
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState('')
   const [use3D, setUse3D] = useState(true)
+  // Whether the last poll actually reached the bridge. The "SYSTEM ONLINE"
+  // badge used to be a hardcoded green label with no data check at all — it
+  // would keep saying "online" even while the bridge tunnel was fully down
+  // and every fetch was failing, which is the opposite of what a status
+  // badge is for. fetch() does NOT throw on a non-2xx response, so both the
+  // HTTP status AND the route's own `error` field have to be checked —
+  // a 500 with a valid JSON body would otherwise slip through as "healthy".
+  const [systemOnline, setSystemOnline] = useState(true)
   const feedRef = useRef<HTMLDivElement>(null)
 
   const fetchData = useCallback(async () => {
     // Fetch independently: activity's underlying data source can be slow
     // (reads transcript files on jarvis), and a slow/failed activity fetch
     // must never blank out already-good agent data.
+    let agentsOk = false
     try {
       const agRes = await fetch('/api/agents', { cache: 'no-store' })
       const agData = await agRes.json()
+      agentsOk = agRes.ok && !agData.error
       setAgents(agData.agents ?? [])
       setLoading(false)
       setLastUpdate(new Date().toLocaleTimeString())
@@ -1028,13 +1044,16 @@ export default function OfficeScene() {
       console.error('Agents fetch error:', e)
       setLoading(false)
     }
+    let activityOk = false
     try {
       const actRes = await fetch('/api/activity', { cache: 'no-store' })
       const actData = await actRes.json()
+      activityOk = actRes.ok && !actData.error
       setActivity(actData)
     } catch (e) {
       console.error('Activity fetch error:', e)
     }
+    setSystemOnline(agentsOk && activityOk)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -1112,7 +1131,7 @@ export default function OfficeScene() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-          <SystemOnlineBadge />
+          <SystemOnlineBadge online={systemOnline} />
           {lastUpdate && <span style={{ fontSize: 7.5, color: 'rgba(71,85,105,0.6)', fontFamily: 'JetBrains Mono, monospace' }}>↺ {lastUpdate}</span>}
           <a href="/dashboard" style={{ fontSize: 8.5, color: 'rgba(148,163,184,0.5)', border: '1px solid rgba(255,255,255,0.07)', padding: '5px 12px', borderRadius: 6, textDecoration: 'none', background: 'rgba(255,255,255,0.02)', letterSpacing: 0.5, fontFamily: 'JetBrains Mono, monospace' }}>⊞ DASHBOARD</a>
         </div>

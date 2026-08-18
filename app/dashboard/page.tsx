@@ -195,7 +195,9 @@ function StatItem({ label, value, color, icon, delay = 0 }: {
 
 // ─── Main Dashboard Page ──────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { startPolling, agents, activity } = useAgentStore()
+  const { startPolling, agents, activity, error, activityError } = useAgentStore()
+  // Was a hardcoded green "SYSTEM ONLINE" label with no data behind it.
+  const systemOnline = !error && !activityError
 
   useEffect(() => {
     // No override — inherit the store's default (3s, matching the bridge's
@@ -254,13 +256,13 @@ export default function DashboardPage() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* System online indicator */}
+          {/* System online indicator — reflects the store's actual last fetch result */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <div style={{ position: 'relative' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981', animation: 'status-pulse 2s ease-in-out infinite' }} />
-              <div style={{ position: 'absolute', inset: -2, borderRadius: '50%', border: '1px solid rgba(16,185,129,0.4)', animation: 'ring-pulse 2s ease-out infinite' }} />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: systemOnline ? '#10b981' : '#ef4444', boxShadow: `0 0 8px ${systemOnline ? '#10b981' : '#ef4444'}`, animation: 'status-pulse 2s ease-in-out infinite' }} />
+              <div style={{ position: 'absolute', inset: -2, borderRadius: '50%', border: `1px solid ${systemOnline ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.5)'}`, animation: 'ring-pulse 2s ease-out infinite' }} />
             </div>
-            <span style={{ fontSize: 8, color: '#10b981', fontFamily: 'JetBrains Mono, monospace', letterSpacing: 1.5 }}>SYSTEM ONLINE</span>
+            <span style={{ fontSize: 8, color: systemOnline ? '#10b981' : '#ef4444', fontFamily: 'JetBrains Mono, monospace', letterSpacing: 1.5 }}>{systemOnline ? 'SYSTEM ONLINE' : 'SYSTEM OFFLINE'}</span>
           </div>
           <a href="/" style={{
             fontSize: 8.5, color: '#00f5ff',

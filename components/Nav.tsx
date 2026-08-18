@@ -18,6 +18,11 @@ function pad(n: number) { return String(n).padStart(2, '0') }
 export default function Nav() {
   const pathname = usePathname()
   const [clock, setClock] = useState('' )
+  // Was a hardcoded green "LIVE" label with no data behind it — stayed
+  // green through real bridge outages. Now backed by an actual health
+  // check against the bridge, polled independently of whatever each page
+  // is separately fetching.
+  const [online, setOnline] = useState(true)
 
   useEffect(() => {
     const tick = () => {
@@ -26,6 +31,21 @@ export default function Nav() {
     }
     tick()
     const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const res = await fetch('/api/health', { cache: 'no-store' })
+        const data = await res.json()
+        setOnline(data.online === true)
+      } catch {
+        setOnline(false)
+      }
+    }
+    checkHealth()
+    const id = setInterval(checkHealth, 5000)
     return () => clearInterval(id)
   }, [])
 
@@ -92,9 +112,9 @@ export default function Nav() {
           <motion.div
             animate={{ opacity: [1, 0.3, 1], scale: [1, 1.2, 1] }}
             transition={{ duration: 1.8, repeat: Infinity }}
-            style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }}
+            style={{ width: 7, height: 7, borderRadius: '50%', background: online ? '#10b981' : '#ef4444', boxShadow: `0 0 6px ${online ? '#10b981' : '#ef4444'}` }}
           />
-          <span style={{ fontSize: 8, color: '#10b981', fontFamily: 'JetBrains Mono, monospace', letterSpacing: 1.5 }}>LIVE</span>
+          <span style={{ fontSize: 8, color: online ? '#10b981' : '#ef4444', fontFamily: 'JetBrains Mono, monospace', letterSpacing: 1.5 }}>{online ? 'LIVE' : 'OFFLINE'}</span>
         </div>
       </div>
     </motion.nav>

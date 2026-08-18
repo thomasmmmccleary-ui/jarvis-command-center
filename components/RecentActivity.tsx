@@ -4,7 +4,8 @@ import { motion } from 'framer-motion'
 import { useAgentStore } from '@/lib/store'
 import type { CompletedItem } from '@/app/api/activity/route'
 
-function formatTime(iso: string): string {
+function formatTime(iso: string | null | undefined): string {
+  if (!iso) return '—'
   try {
     const d = new Date(iso)
     const now = new Date()

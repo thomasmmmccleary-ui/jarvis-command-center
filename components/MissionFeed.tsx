@@ -13,7 +13,8 @@ function formatDuration(ms?: number): string {
   return `${Math.floor(m / 60)}h ${m % 60}m`
 }
 
-function formatTime(iso: string): string {
+function formatTime(iso: string | null | undefined): string {
+  if (!iso) return '—'
   try {
     return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
   } catch {
@@ -27,30 +28,30 @@ function formatTokens(n: number): string {
 }
 
 function MissionCard({ mission, index }: { mission: MissionRecord; index: number }) {
-  const statusColor = {
+  const statusColor = ({
     running: 'border-active/40 bg-active/5',
     done: 'border-completed/30 bg-completed/5',
     failed: 'border-red-500/30 bg-red-500/5',
-  }[mission.status] ?? 'border-border bg-surface'
+  } as Record<string, string>)[mission.status] ?? 'border-border bg-surface'
 
-  const statusDot = {
+  const statusDot = ({
     running: 'bg-active',
     done: 'bg-completed',
     failed: 'bg-red-500',
-  }[mission.status] ?? 'bg-gray-500'
+  } as Record<string, string>)[mission.status] ?? 'bg-gray-500'
 
-  const statusLabel = {
+  const statusLabel = ({
     running: 'RUNNING',
     done: 'DONE',
     failed: 'FAILED',
-  }[mission.status] ?? 'UNKNOWN'
+  } as Record<string, string>)[mission.status] ?? 'UNKNOWN'
 
-  const channelIcon = {
+  const channelIcon = ({
     slack: '💬',
     webchat: '🌐',
     direct: '⌨',
     subagent: '⚡',
-  }[mission.channel] ?? '◎'
+  } as Record<string, string>)[mission.channel] ?? '◎'
 
   return (
     <motion.div

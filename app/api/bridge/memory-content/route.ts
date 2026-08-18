@@ -2,8 +2,12 @@ import { NextResponse, NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-const BRIDGE_URL = 'https://marketing-wide-casual-reveal.trycloudflare.com'
-const BRIDGE_TOKEN = 'QR3c6f6tXGpdAO9N1DTR1FiXe1J2MbuzDTArUi4vRr8'
+const BRIDGE_URL = process.env.BRIDGE_URL
+const BRIDGE_TOKEN = process.env.BRIDGE_TOKEN
+
+if (!BRIDGE_URL || !BRIDGE_TOKEN) {
+  throw new Error('BRIDGE_URL and BRIDGE_TOKEN environment variables must be set')
+}
 
 export async function GET(request: NextRequest) {
   try {

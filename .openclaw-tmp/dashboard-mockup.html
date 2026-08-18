@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>J.A.R.V.I.S. Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cyan: #00f5ff;
+    --purple: #7c3aed;
+    --amber: #f59e0b;
+    --emerald: #10b981;
+    --red: #ef4444;
+    --bg: #050510;
+    --panel: rgba(255,255,255,0.04);
+    --panel-border: rgba(0,245,255,0.15);
+    --text-dim: rgba(255,255,255,0.45);
+    --text-mid: rgba(255,255,255,0.7);
+    --text-bright: rgba(255,255,255,0.92);
+  }
+
+  body {
+    background: var(--bg);
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-bright);
+    width: 1440px;
+    min-height: 900px;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ─── STAR CANVAS ─── */
+  #stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+
+  /* ─── GLOBAL GRID OVERLAY ─── */
+  .grid-overlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    background-image:
+      linear-gradient(rgba(0,245,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,255,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* ─── LAYOUT WRAPPER ─── */
+  .app {
+    position: relative; z-index: 2;
+    width: 1440px;
+    min-height: 900px;
+    display: flex;
+    flex-direction: column;
+    padding: 0 24px 24px;
+  }
+
+  /* ════════════════════════════════════════
+     HEADER
+  ════════════════════════════════════════ */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 0 14px;
+    border-bottom: 1px solid rgba(0,245,255,0.18);
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .header::after {
+    content:'';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.6;
+  }
+
+  .header-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #00f5ff 0%, #a78bfa 60%, #00f5ff 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s ease infinite;
+    text-shadow: none;
+    filter: drop-shadow(0 0 18px rgba(0,245,255,0.5));
+  }
+  @keyframes shimmer {
+    0%,100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+  }
+
+  .header-stats {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .stat-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .stat-pill .val {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat-pill .lbl {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .val-green  { color: var(--emerald); text-shadow: 0 0 14px rgba(16,185,129,0.8); }
+  .val-cyan   { color: var(--cyan);    text-shadow: 0 0 14px rgba(0,245,255,0.8); }
+  .val-amber  { color: var(--amber);   text-shadow: 0 0 14px rgba(245,158,11,0.8); }
+  .val-purple { color: #a78bfa;        text-shadow: 0 0 14px rgba(167,139,250,0.7); }
+
+  .stat-sep {
+    width: 1px; height: 36px;
+    background: linear-gradient(to bottom, transparent, rgba(0,245,255,0.3), transparent);
+  }
+
+  .status-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.35);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--emerald);
+  }
+  .pulse-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--emerald);
+    box-shadow: 0 0 10px var(--emerald);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  /* ════════════════════════════════════════
+     MAIN CONTENT (office + bottom)
+  ════════════════════════════════════════ */
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    flex: 1;
+  }
+
+  /* ════════════════════════════════════════
+     OFFICE SCENE
+  ════════════════════════════════════════ */
+  .office-container {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    height: 430px;
+    overflow: hidden;
+  }
+  .office-container::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+  }
+
+  /* Glow corners */
+  .office-container::after {
+    content:'';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 30% 20% at 0% 0%, rgba(124,58,237,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 20% at 100% 100%, rgba(0,245,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .office-scene {
+    position: absolute; inset: 0;
+  }
+
+  /* Zone labels */
+  .zone-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    position: absolute;
+    padding: 4px 10px;
+    border-radius: 4px;
+    z-index: 10;
+  }
+  .zone-floor {
+    top: 12px; left: 20px;
+    color: var(--cyan);
+    background: rgba(0,245,255,0.07);
+    border: 1px solid rgba(0,245,255,0.2);
+    text-shadow: 0 0 8px var(--cyan);
+  }
+  .zone-lounge {
+    top: 12px; right: 20px;
+    color: #a78bfa;
+    background: rgba(124,58,237,0.1);
+    border: 1px solid rgba(124,58,237,0.25);
+    text-shadow: 0 0 8px #a78bfa;
+  }
+
+  /* Floor divider */
+  .floor-divider {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 68%;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(124,58,237,0.3), rgba(124,58,237,0.3), transparent);
+  }
+
+  /* Floor tiles */
+  .floor-tiles {
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 59px,
+        rgba(255,255,255,0.02) 60px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 59px,
+        rgba(255,255,255,0.02) 60px
+      );
+    border-radius: 16px;
+  }
+
+  /* ─── DESKS ─── */
+  .desk {
+    position: absolute;
+    width: 76px; height: 46px;
+    background: rgba(15,20,40,0.85);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .desk.active {
+    border-color: rgba(0,245,255,0.5);
+    box-shadow: 0 0 16px rgba(0,245,255,0.2), inset 0 0 8px rgba(0,245,255,0.05);
+  }
+  .desk.active::before {
+    content:'';
+    position: absolute; inset: -4px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,245,255,0.15);
+    animation: deskPulse 2s ease-in-out infinite;
+  }
+  @keyframes deskPulse {
+    0%,100% { opacity: 0.8; }
+    50%      { opacity: 0.2; }
+  }
+
+  /* Monitor on desk */
+  .monitor {
+    position: absolute;
+    top: 4px; left: 50%;
+    transform: translateX(-50%);
+    width: 42px; height: 28px;
+    background: rgba(5,5,25,0.95);
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.12);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .monitor-screen {
+    width: 38px; height: 24px;
+    border-radius: 2px;
+    background: rgba(10,10,35,0.9);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 5px;
+    overflow: hidden;
+  }
+  .monitor-screen.active {
+    background: rgba(0,10,30,0.95);
+    animation: screenFlicker 3s step-end infinite;
+  }
+  @keyframes screenFlicker {
+    0%,90%,100% { opacity: 1; }
+    92%          { opacity: 0.85; }
+    95%          { opacity: 1; }
+  }
+  .screen-lines {
+    display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 2px;
+  }
+  .screen-line {
+    height: 2px; border-radius: 1px;
+    background: rgba(0,245,255,0.4);
+    animation: typeLine 2s ease-in-out infinite;
+  }
+  .screen-line:nth-child(2) { width: 70%; animation-delay: 0.3s; background: rgba(167,139,250,0.4); }
+  .screen-line:nth-child(3) { width: 55%; animation-delay: 0.6s; }
+  .screen-line:nth-child(4) { width: 80%; animation-delay: 0.9s; background: rgba(16,185,129,0.4); }
+  @keyframes typeLine {
+    0%   { width: 0; opacity: 0; }
+    30%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { opacity: 0.5; }
+  }
+
+  .monitor-idle .screen-lines .screen-line {
+    animation: none;
+    opacity: 0.2;
+  }
+
+  /* Monitor glow halo */
+  .desk.active .monitor::after {
+    content: '';
+    position: absolute; inset: -6px;
+    border-radius: 6px;
+    background: radial-gradient(ellipse, rgba(0,245,255,0.18) 0%, transparent 70%);
+  }
+
+  /* ─── EXCLAMATION BADGE ─── */
+  .alert-badge {
+    position: absolute;
+    top: -6px; right: -6px;
+    width: 14px; height: 14px;
+    background: var(--cyan);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: bold; color: #000;
+    box-shadow: 0 0 8px var(--cyan);
+    animation: badgeBounce 1.5s ease-in-out infinite;
+    z-index: 5;
+  }
+  @keyframes badgeBounce {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-3px); }
+  }
+
+  /* ─── CHARACTERS ─── */
+  .character {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    z-index: 8;
+  }
+  .char-name-pill {
+    font-size: 7px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 1px 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .char-body {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+
+  /* SVG character */
+  .char-svg { width: 22px; height: 46px; }
+
+  /* Walking character animation */
+  .walking .char-svg .left-leg  { animation: walkLeft  0.6s ease-in-out infinite alternate; transform-origin: 11px 36px; }
+  .walking .char-svg .right-leg { animation: walkRight 0.6s ease-in-out infinite alternate; transform-origin: 11px 36px; }
+  .walking .char-svg .left-arm  { animation: armLeft   0.6s ease-in-out infinite alternate; transform-origin: 8px 22px; }
+  .walking .char-svg .right-arm { animation: armRight  0.6s ease-in-out infinite alternate; transform-origin: 14px 22px; }
+  @keyframes walkLeft  { from { transform: rotate(-18deg); } to { transform: rotate(18deg); } }
+  @keyframes walkRight { from { transform: rotate(18deg);  } to { transform: rotate(-18deg); } }
+  @keyframes armLeft   { from { transform: rotate(18deg);  } to { transform: rotate(-18deg); } }
+  @keyframes armRight  { from { transform: rotate(-18deg); } to { transform: rotate(18deg); } }
+
+  /* Seated character */
+  .seated .char-svg .left-leg  { transform: rotate(80deg); transform-origin: 9px 36px; }
+  .seated .char-svg .right-leg { transform: rotate(80deg); transform-origin: 13px 36px; }
+  .seated .char-svg .left-arm  { transform: rotate(-40deg); transform-origin: 7px 22px; }
+  .seated .char-svg .right-arm { transform: rotate(-40deg); transform-origin: 15px 22px; }
+
+  /* ─── PATH DOTS (walkways) ─── */
+  .walkway {
+    position: absolute;
+    background: rgba(255,255,255,0.03);
+    border-radius: 2px;
+  }
+
+  /* ─── LOUNGE FURNITURE ─── */
+  .couch {
+    position: absolute;
+    width: 110px; height: 40px;
+    background: rgba(124,58,237,0.18);
+    border: 1px solid rgba(124,58,237,0.35);
+    border-radius: 8px;
+    box-shadow: 0 0 12px rgba(124,58,237,0.15);
+  }
+  .couch-back {
+    position: absolute;
+    top: -12px; left: 0; right: 0;
+    height: 14px;
+    background: rgba(124,58,237,0.25);
+    border-radius: 8px 8px 0 0;
+    border: 1px solid rgba(124,58,237,0.4);
+    border-bottom: none;
+  }
+  .couch-cushion {
+    position: absolute;
+    top: 5px;
+    width: 32px; height: 28px;
+    background: rgba(124,58,237,0.2);
+    border-radius: 4px;
+    border: 1px solid rgba(124,58,237,0.3);
+  }
+
+  .tv-unit {
+    position: absolute;
+    width: 72px; height: 48px;
+    background: rgba(10,10,30,0.9);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tv-screen {
+    width: 62px; height: 38px;
+    border-radius: 4px;
+    animation: tvCycle 4s step-start infinite;
+  }
+  @keyframes tvCycle {
+    0%   { background: linear-gradient(135deg, #7c3aed44, #00f5ff44); }
+    25%  { background: linear-gradient(135deg, #10b98144, #f59e0b44); }
+    50%  { background: linear-gradient(135deg, #ef444444, #7c3aed44); }
+    75%  { background: linear-gradient(135deg, #00f5ff44, #10b98144); }
+    100% { background: linear-gradient(135deg, #7c3aed44, #00f5ff44); }
+  }
+  .tv-glow {
+    position: absolute; inset: -8px;
+    border-radius: 10px;
+    animation: tvGlow 4s step-start infinite;
+    pointer-events: none;
+  }
+  @keyframes tvGlow {
+    0%   { box-shadow: 0 0 20px rgba(124,58,237,0.3); }
+    25%  { box-shadow: 0 0 20px rgba(16,185,129,0.3); }
+    50%  { box-shadow: 0 0 20px rgba(239,68,68,0.3); }
+    75%  { box-shadow: 0 0 20px rgba(0,245,255,0.3); }
+    100% { box-shadow: 0 0 20px rgba(124,58,237,0.3); }
+  }
+
+  .water-cooler {
+    position: absolute;
+    width: 20px;
+  }
+
+  .plant {
+    position: absolute;
+    font-size: 22px;
+    filter: drop-shadow(0 0 6px rgba(16,185,129,0.4));
+    animation: plantSway 4s ease-in-out infinite;
+  }
+  @keyframes plantSway {
+    0%,100% { transform: rotate(-3deg); }
+    50%     { transform: rotate(3deg); }
+  }
+
+  /* ════════════════════════════════════════
+     BOTTOM PANELS
+  ════════════════════════════════════════ */
+  .bottom-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    height: 270px;
+  }
+
+  .panel {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    backdrop-filter: blur(12px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid rgba(0,245,255,0.08);
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cyan);
+  }
+  .panel-badge {
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: rgba(0,245,255,0.12);
+    border: 1px solid rgba(0,245,255,0.25);
+    color: var(--cyan);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,245,255,0.2) transparent;
+  }
+
+  /* ─── AGENT CARDS ─── */
+  .agent-card {
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .agent-card.active-card {
+    border-color: rgba(0,245,255,0.3);
+    background: rgba(0,245,255,0.04);
+    animation: cardPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes cardPulse {
+    0%,100% { box-shadow: 0 0 0 rgba(0,245,255,0); }
+    50%      { box-shadow: 0 0 14px rgba(0,245,255,0.12); }
+  }
+
+  .agent-avatar {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .agent-info { flex: 1; min-width: 0; }
+  .agent-name {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: var(--text-bright);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .agent-task {
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .agent-progress {
+    margin-top: 6px;
+    height: 3px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    border-radius: 2px;
+    animation: progressGlow 1.5s ease-in-out infinite;
+  }
+  @keyframes progressGlow {
+    0%,100% { filter: brightness(1); }
+    50%      { filter: brightness(1.4); }
+  }
+
+  .agent-meta {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+    flex-shrink: 0;
+  }
+  .agent-timer {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-mid);
+  }
+  .agent-status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+  }
+  .dot-active  { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); animation: pulse 1.6s infinite; }
+  .dot-idle    { background: var(--amber);   box-shadow: 0 0 6px var(--amber); }
+  .dot-waiting { background: var(--purple);  box-shadow: 0 0 6px var(--purple); animation: pulse 2s infinite; }
+
+  /* ─── ACTIVITY FEED ─── */
+  .feed-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.02);
+    border-left: 3px solid transparent;
+    font-size: 10px;
+    line-height: 1.5;
+    animation: feedIn 0.4s ease-out;
+  }
+  @keyframes feedIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .feed-item:nth-child(1) { animation-delay: 0.0s; }
+  .feed-item:nth-child(2) { animation-delay: 0.1s; }
+  .feed-item:nth-child(3) { animation-delay: 0.2s; }
+  .feed-item:nth-child(4) { animation-delay: 0.3s; }
+  .feed-item:nth-child(5) { animation-delay: 0.4s; }
+  .feed-item:nth-child(6) { animation-delay: 0.5s; }
+  .feed-item:nth-child(7) { animation-delay: 0.6s; }
+
+  .feed-ts {
+    color: var(--text-dim);
+    font-size: 9px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding-top: 1px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .feed-msg { color: var(--text-mid); flex: 1; }
+  .feed-msg strong { color: var(--text-bright); font-weight: 600; }
+  .feed-msg em { font-style: normal; color: var(--cyan); }
+
+  .border-green   { border-left-color: var(--emerald); }
+  .border-cyan    { border-left-color: var(--cyan); }
+  .border-amber   { border-left-color: var(--amber); }
+  .border-purple  { border-left-color: #a78bfa; }
+  .border-red     { border-left-color: var(--red); }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,245,255,0.2); border-radius: 2px; }
+
+  /* ─── WALKING ANIMATIONS ALONG PATHS ─── */
+  .walker-1 { animation: walkPath1 12s linear infinite; }
+  .walker-2 { animation: walkPath2 16s linear infinite; }
+  .walker-3 { animation: walkPath3 10s linear infinite; }
+  .walker-idle { animation: none; }
+
+  @keyframes walkPath1 {
+    0%   { transform: translateX(0px); }
+    40%  { transform: translateX(180px); }
+    50%  { transform: translateX(180px); }
+    90%  { transform: translateX(0px); }
+    100% { transform: translateX(0px); }
+  }
+  @keyframes walkPath2 {
+    0%   { transform: translateX(0px); }
+    45%  { transform: translateX(-120px); }
+    55%  { transform: translateX(-120px); }
+    95%  { transform: translateX(0px); }
+    100% { transform: translateX(0px); }
+  }
+  @keyframes walkPath3 {
+    0%   { transform: translateY(0px); }
+    40%  { transform: translateY(60px); }
+    50%  { transform: translateY(60px); }
+    90%  { transform: translateY(0px); }
+    100% { transform: translateY(0px); }
+  }
+
+  /* ─── SCANLINE OVERLAY ─── */
+  .scanline {
+    position: fixed; inset: 0; pointer-events: none; z-index: 100;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.015) 2px,
+      rgba(0,0,0,0.015) 4px
+    );
+  }
+
+  /* ─── CORNER DECORATIONS ─── */
+  .corner-tl, .corner-tr, .corner-bl, .corner-br {
+    position: fixed;
+    width: 40px; height: 40px;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .corner-tl { top: 8px; left: 8px;
+    border-top: 2px solid rgba(0,245,255,0.4);
+    border-left: 2px solid rgba(0,245,255,0.4);
+  }
+  .corner-tr { top: 8px; right: 8px;
+    border-top: 2px solid rgba(0,245,255,0.4);
+    border-right: 2px solid rgba(0,245,255,0.4);
+  }
+  .corner-bl { bottom: 8px; left: 8px;
+    border-bottom: 2px solid rgba(0,245,255,0.4);
+    border-left: 2px solid rgba(0,245,255,0.4);
+  }
+  .corner-br { bottom: 8px; right: 8px;
+    border-bottom: 2px solid rgba(0,245,255,0.4);
+    border-right: 2px solid rgba(0,245,255,0.4);
+  }
+</style>
+</head>
+<body>
+
+<!-- Stars canvas -->
+<canvas id="stars"></canvas>
+<!-- Grid -->
+<div class="grid-overlay"></div>
+<!-- Scanlines -->
+<div class="scanline"></div>
+<!-- Corner HUD markers -->
+<div class="corner-tl"></div>
+<div class="corner-tr"></div>
+<div class="corner-bl"></div>
+<div class="corner-br"></div>
+
+<div class="app">
+
+  <!-- ═══════════════════ HEADER ═══════════════════ -->
+  <header class="header">
+    <div class="header-title">J.A.R.V.I.S. Command Center</div>
+
+    <div class="header-stats">
+      <div class="stat-pill">
+        <span class="val val-green" id="active-count">4</span>
+        <span class="lbl">Agents Active</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-pill">
+        <span class="val val-cyan">111</span>
+        <span class="lbl">Total Agents</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-pill">
+        <span class="val val-amber" id="tasks-count">17</span>
+        <span class="lbl">Tasks Today</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-pill">
+        <span class="val val-purple" id="uptime">06:42:11</span>
+        <span class="lbl">System Uptime</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="status-badge">
+        <div class="pulse-dot"></div>
+        SYSTEM ONLINE
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+  <div class="main-content">
+
+    <!-- ═══════════════ OFFICE SCENE ═══════════════ -->
+    <div class="office-container">
+      <div class="floor-tiles"></div>
+      <div class="office-scene">
+
+        <!-- Zone labels -->
+        <div class="zone-label zone-floor">◈ The Floor</div>
+        <div class="zone-label zone-lounge">◈ The Lounge</div>
+
+        <!-- Floor divider -->
+        <div class="floor-divider"></div>
+
+        <!-- ─── WALKWAYS ─── -->
+        <div class="walkway" style="left:0;right:32%;top:130px;height:12px;"></div>
+        <div class="walkway" style="left:0;right:32%;top:256px;height:12px;"></div>
+        <div class="walkway" style="left:180px;top:50px;width:12px;bottom:20px;"></div>
+        <div class="walkway" style="left:380px;top:50px;width:12px;bottom:20px;"></div>
+
+        <!-- ═══════ POD A — market-research (active) ═══════ -->
+        <!-- Desk A1 -->
+        <div class="desk active" style="left:30px;top:60px;">
+          <div class="monitor"><div class="monitor-screen active"><div class="screen-lines"><div class="screen-line"></div><div class="screen-line"></div><div class="screen-line"></div><div class="screen-line"></div></div></div></div>
+          <div class="alert-badge">!</div>
+        </div>
+        <!-- Desk A2 -->
+        <div class="desk" style="left:120px;top:60px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div><div class="screen-line"></div></div></div></div>
+        </div>
+        <!-- Desk A3 -->
+        <div class="desk active" style="left:30px;top:160px;">
+          <div class="monitor"><div class="monitor-screen active"><div class="screen-lines"><div class="screen-line"></div><div class="screen-line"></div><div class="screen-line"></div></div></div></div>
+          <div class="alert-badge">!</div>
+        </div>
+        <!-- Desk A4 -->
+        <div class="desk" style="left:120px;top:160px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div></div></div></div>
+        </div>
+
+        <!-- ═══════ POD B — campaign-strategy (active) ═══════ -->
+        <!-- Desk B1 -->
+        <div class="desk active" style="left:220px;top:60px;">
+          <div class="monitor"><div class="monitor-screen active"><div class="screen-lines"><div class="screen-line"></div><div class="screen-line"></div><div class="screen-line"></div><div class="screen-line"></div></div></div></div>
+          <div class="alert-badge">!</div>
+        </div>
+        <!-- Desk B2 -->
+        <div class="desk" style="left:310px;top:60px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div><div class="screen-line"></div></div></div></div>
+        </div>
+        <!-- Desk B3 -->
+        <div class="desk" style="left:220px;top:160px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div></div></div></div>
+        </div>
+        <!-- Desk B4 -->
+        <div class="desk" style="left:310px;top:160px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div></div></div></div>
+        </div>
+
+        <!-- ═══════ POD C — audience-insights (active) ═══════ -->
+        <!-- Desk C1 -->
+        <div class="desk active" style="left:30px;top:270px;">
+          <div class="monitor"><div class="monitor-screen active"><div class="screen-lines"><div class="screen-line"></div><div class="screen-line"></div><div class="screen-line"></div></div></div></div>
+          <div class="alert-badge">!</div>
+        </div>
+        <!-- Desk C2 -->
+        <div class="desk" style="left:120px;top:270px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div><div class="screen-line"></div></div></div></div>
+        </div>
+        <!-- Desk C3 -->
+        <div class="desk" style="left:220px;top:270px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div></div></div></div>
+        </div>
+        <!-- Desk C4 -->
+        <div class="desk" style="left:310px;top:270px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div></div></div></div>
+        </div>
+
+        <!-- ═══════ POD D — creative-review (active) ═══════ -->
+        <div class="desk active" style="left:430px;top:60px;">
+          <div class="monitor"><div class="monitor-screen active"><div class="screen-lines"><div class="screen-line"></div><div class="screen-line"></div><div class="screen-line"></div><div class="screen-line"></div></div></div></div>
+          <div class="alert-badge">!</div>
+        </div>
+        <div class="desk" style="left:520px;top:60px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div><div class="screen-line"></div></div></div></div>
+        </div>
+        <div class="desk" style="left:430px;top:160px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div></div></div></div>
+        </div>
+        <div class="desk" style="left:520px;top:160px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div></div></div></div>
+        </div>
+
+        <!-- Pod E — extra desks lower right of floor -->
+        <div class="desk" style="left:430px;top:270px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div></div></div></div>
+        </div>
+        <div class="desk" style="left:520px;top:270px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div></div></div></div>
+        </div>
+
+        <!-- ═══════ CHARACTERS ON THE FLOOR ═══════ -->
+
+        <!-- market-research — seated at desk A1 -->
+        <div class="character seated" style="left:42px;top:38px;">
+          <div class="char-name-pill" style="background:rgba(0,245,255,0.15);border:1px solid rgba(0,245,255,0.35);color:#00f5ff;">market-research</div>
+          <div class="char-body">
+            <svg class="char-svg" viewBox="0 0 22 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- head -->
+              <circle cx="11" cy="7" r="6" fill="#0ff" fill-opacity="0.85"/>
+              <circle cx="8.5" cy="6.5" r="1" fill="#050510"/>
+              <circle cx="13.5" cy="6.5" r="1" fill="#050510"/>
+              <path d="M9 9.5 Q11 11.5 13 9.5" stroke="#050510" stroke-width="0.8" stroke-linecap="round"/>
+              <!-- body -->
+              <rect x="7" y="14" width="8" height="12" rx="2" fill="#00b8c4" fill-opacity="0.9"/>
+              <!-- arms forward (typing) -->
+              <line class="left-arm"  x1="7" y1="17" x2="2"  y2="22" stroke="#00f5ff" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-arm" x1="15" y1="17" x2="20" y2="22" stroke="#00f5ff" stroke-width="1.5" stroke-linecap="round"/>
+              <!-- legs seated -->
+              <line class="left-leg"  x1="9"  y1="26" x2="4"  y2="36" stroke="#00d4e0" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-leg" x1="13" y1="26" x2="18" y2="36" stroke="#00d4e0" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- campaign-strategy — seated at desk B1 -->
+        <div class="character seated" style="left:232px;top:38px;">
+          <div class="char-name-pill" style="background:rgba(124,58,237,0.2);border:1px solid rgba(124,58,237,0.45);color:#a78bfa;">campaign-strategy</div>
+          <div class="char-body">
+            <svg class="char-svg" viewBox="0 0 22 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="7" r="6" fill="#a78bfa" fill-opacity="0.9"/>
+              <circle cx="8.5" cy="6.5" r="1" fill="#1e0a3c"/>
+              <circle cx="13.5" cy="6.5" r="1" fill="#1e0a3c"/>
+              <path d="M9 9.5 Q11 11.5 13 9.5" stroke="#1e0a3c" stroke-width="0.8" stroke-linecap="round"/>
+              <rect x="7" y="14" width="8" height="12" rx="2" fill="#7c3aed" fill-opacity="0.9"/>
+              <line class="left-arm"  x1="7"  y1="17" x2="2"  y2="22" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-arm" x1="15" y1="17" x2="20" y2="22" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="left-leg"  x1="9"  y1="26" x2="4"  y2="36" stroke="#9068e0" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-leg" x1="13" y1="26" x2="18" y2="36" stroke="#9068e0" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- audience-insights — seated at desk C1 -->
+        <div class="character seated" style="left:42px;top:248px;">
+          <div class="char-name-pill" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.35);color:#10b981;">audience-insights</div>
+          <div class="char-body">
+            <svg class="char-svg" viewBox="0 0 22 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="7" r="6" fill="#10b981" fill-opacity="0.9"/>
+              <circle cx="8.5" cy="6.5" r="1" fill="#022c1e"/>
+              <circle cx="13.5" cy="6.5" r="1" fill="#022c1e"/>
+              <path d="M9 9.5 Q11 11.5 13 9.5" stroke="#022c1e" stroke-width="0.8" stroke-linecap="round"/>
+              <rect x="7" y="14" width="8" height="12" rx="2" fill="#059669" fill-opacity="0.9"/>
+              <line class="left-arm"  x1="7"  y1="17" x2="2"  y2="22" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-arm" x1="15" y1="17" x2="20" y2="22" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="left-leg"  x1="9"  y1="26" x2="4"  y2="36" stroke="#34d399" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-leg" x1="13" y1="26" x2="18" y2="36" stroke="#34d399" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- creative-review — seated at desk D1 -->
+        <div class="character seated" style="left:442px;top:38px;">
+          <div class="char-name-pill" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.35);color:#f59e0b;">creative-review</div>
+          <div class="char-body">
+            <svg class="char-svg" viewBox="0 0 22 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="7" r="6" fill="#f59e0b" fill-opacity="0.9"/>
+              <circle cx="8.5" cy="6.5" r="1" fill="#3b1a00"/>
+              <circle cx="13.5" cy="6.5" r="1" fill="#3b1a00"/>
+              <path d="M9 9.5 Q11 11.5 13 9.5" stroke="#3b1a00" stroke-width="0.8" stroke-linecap="round"/>
+              <rect x="7" y="14" width="8" height="12" rx="2" fill="#d97706" fill-opacity="0.9"/>
+              <line class="left-arm"  x1="7"  y1="17" x2="2"  y2="22" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-arm" x1="15" y1="17" x2="20" y2="22" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="left-leg"  x1="9"  y1="26" x2="4"  y2="36" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-leg" x1="13" y1="26" x2="18" y2="36" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Walking character 1: competitive-intel strolling the main aisle -->
+        <div class="character walking walker-1" style="left:50px;top:140px;">
+          <div class="char-name-pill" style="background:rgba(239,68,68,0.13);border:1px solid rgba(239,68,68,0.3);color:#f87171;">competitive-intel</div>
+          <div class="char-body">
+            <svg class="char-svg" viewBox="0 0 22 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="7" r="6" fill="#f87171" fill-opacity="0.9"/>
+              <circle cx="8.5" cy="6.5" r="1" fill="#2d0000"/>
+              <circle cx="13.5" cy="6.5" r="1" fill="#2d0000"/>
+              <path d="M9 9.5 Q11 11 13 9.5" stroke="#2d0000" stroke-width="0.8" stroke-linecap="round"/>
+              <rect x="7" y="14" width="8" height="12" rx="2" fill="#dc2626" fill-opacity="0.9"/>
+              <line class="left-arm"  x1="7"  y1="17" x2="2"  y2="23" stroke="#f87171" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-arm" x1="15" y1="17" x2="19" y2="21" stroke="#f87171" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="left-leg"  x1="9"  y1="26" x2="6"  y2="38" stroke="#fca5a5" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-leg" x1="13" y1="26" x2="16" y2="38" stroke="#fca5a5" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Walking character 2: content-scheduler strolling -->
+        <div class="character walking walker-2" style="left:550px;top:250px;">
+          <div class="char-name-pill" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.35);color:#818cf8;">content-scheduler</div>
+          <div class="char-body">
+            <svg class="char-svg" viewBox="0 0 22 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="7" r="6" fill="#818cf8" fill-opacity="0.9"/>
+              <circle cx="8.5" cy="6.5" r="1" fill="#0e0a30"/>
+              <circle cx="13.5" cy="6.5" r="1" fill="#0e0a30"/>
+              <path d="M9 9.5 Q11 11 13 9.5" stroke="#0e0a30" stroke-width="0.8" stroke-linecap="round"/>
+              <rect x="7" y="14" width="8" height="12" rx="2" fill="#4f46e5" fill-opacity="0.9"/>
+              <line class="left-arm"  x1="7"  y1="17" x2="3"  y2="22" stroke="#818cf8" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-arm" x1="15" y1="17" x2="19" y2="22" stroke="#818cf8" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="left-leg"  x1="9"  y1="26" x2="7"  y2="38" stroke="#a5b4fc" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-leg" x1="13" y1="26" x2="15" y2="38" stroke="#a5b4fc" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- ═══════ THE LOUNGE ═══════ -->
+        <!-- Couch -->
+        <div class="couch" style="left:1020px;top:130px;">
+          <div class="couch-back"></div>
+          <div class="couch-cushion" style="left:5px;"></div>
+          <div class="couch-cushion" style="left:43px;"></div>
+          <div class="couch-cushion" style="left:73px;"></div>
+        </div>
+
+        <!-- TV -->
+        <div class="tv-unit" style="left:980px;top:60px;">
+          <div class="tv-screen"></div>
+          <div class="tv-glow"></div>
+        </div>
+
+        <!-- Water cooler (simple SVG) -->
+        <svg class="water-cooler" style="position:absolute;left:1175px;top:90px;" viewBox="0 0 20 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="12" width="12" height="26" rx="3" fill="rgba(0,245,255,0.12)" stroke="rgba(0,245,255,0.3)" stroke-width="0.8"/>
+          <ellipse cx="10" cy="8" rx="7" ry="9" fill="rgba(0,245,255,0.18)" stroke="rgba(0,245,255,0.35)" stroke-width="0.8"/>
+          <rect x="8" y="32" width="4" height="6" rx="1" fill="rgba(0,245,255,0.15)"/>
+          <circle cx="10" cy="10" r="4" fill="rgba(0,245,255,0.1)" stroke="rgba(0,245,255,0.2)" stroke-width="0.5"/>
+          <text x="10" y="25" text-anchor="middle" fill="rgba(0,245,255,0.5)" font-size="5" font-family="monospace">H₂O</text>
+        </svg>
+
+        <!-- Plants -->
+        <div class="plant" style="left:1210px;top:90px;">🌿</div>
+        <div class="plant" style="left:930px;top:280px; animation-delay:1.5s;">🪴</div>
+
+        <!-- Idle agent chilling on couch -->
+        <div class="character walker-idle" style="left:1040px;top:96px;">
+          <div class="char-name-pill" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:#fbbf24;">seo-analyst</div>
+          <div class="char-body">
+            <svg class="char-svg" viewBox="0 0 22 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="7" r="6" fill="#fbbf24" fill-opacity="0.8"/>
+              <circle cx="8.5" cy="6.5" r="1" fill="#2c1700"/>
+              <circle cx="13.5" cy="6.5" r="1" fill="#2c1700"/>
+              <!-- eyes closed / relaxed -->
+              <path d="M8.5 6.5 Q9 7.5 9.5 6.5" stroke="#2c1700" stroke-width="0.6"/>
+              <path d="M12.5 6.5 Q13 7.5 13.5 6.5" stroke="#2c1700" stroke-width="0.6"/>
+              <path d="M9 9.5 Q11 11 13 9.5" stroke="#2c1700" stroke-width="0.8" stroke-linecap="round"/>
+              <rect x="7" y="14" width="8" height="12" rx="2" fill="#b45309" fill-opacity="0.9"/>
+              <line x1="7"  y1="17" x2="2"  y2="20" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="15" y1="17" x2="20" y2="20" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="9"  y1="26" x2="5"  y2="38" stroke="#fcd34d" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="13" y1="26" x2="17" y2="38" stroke="#fcd34d" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- data-analyst at lounge, standing -->
+        <div class="character walker-idle" style="left:1110px;top:160px;">
+          <div class="char-name-pill" style="background:rgba(20,184,166,0.13);border:1px solid rgba(20,184,166,0.3);color:#2dd4bf;">data-analyst</div>
+          <div class="char-body">
+            <svg class="char-svg" viewBox="0 0 22 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="7" r="6" fill="#2dd4bf" fill-opacity="0.9"/>
+              <circle cx="8.5" cy="6.5" r="1" fill="#001a18"/>
+              <circle cx="13.5" cy="6.5" r="1" fill="#001a18"/>
+              <path d="M9 9.5 Q11 11 13 9.5" stroke="#001a18" stroke-width="0.8" stroke-linecap="round"/>
+              <rect x="7" y="14" width="8" height="12" rx="2" fill="#0d9488" fill-opacity="0.9"/>
+              <line x1="7"  y1="17" x2="3"  y2="24" stroke="#2dd4bf" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="15" y1="17" x2="19" y2="24" stroke="#2dd4bf" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="9"  y1="26" x2="8"  y2="38" stroke="#99f6e4" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="13" y1="26" x2="14" y2="38" stroke="#99f6e4" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Walking through lounge -->
+        <div class="character walking walker-3" style="left:990px;top:230px;">
+          <div class="char-name-pill" style="background:rgba(236,72,153,0.13);border:1px solid rgba(236,72,153,0.3);color:#f472b6;">email-marketer</div>
+          <div class="char-body">
+            <svg class="char-svg" viewBox="0 0 22 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="7" r="6" fill="#f472b6" fill-opacity="0.9"/>
+              <circle cx="8.5" cy="6.5" r="1" fill="#2d0020"/>
+              <circle cx="13.5" cy="6.5" r="1" fill="#2d0020"/>
+              <path d="M9 9.5 Q11 11 13 9.5" stroke="#2d0020" stroke-width="0.8" stroke-linecap="round"/>
+              <rect x="7" y="14" width="8" height="12" rx="2" fill="#db2777" fill-opacity="0.9"/>
+              <line class="left-arm"  x1="7"  y1="17" x2="2"  y2="22" stroke="#f472b6" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-arm" x1="15" y1="17" x2="19" y2="22" stroke="#f472b6" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="left-leg"  x1="9"  y1="26" x2="6"  y2="38" stroke="#fbcfe8" stroke-width="1.5" stroke-linecap="round"/>
+              <line class="right-leg" x1="13" y1="26" x2="16" y2="38" stroke="#fbcfe8" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Lounge desk -->
+        <div class="desk" style="left:1060px;top:250px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div></div></div></div>
+        </div>
+        <div class="desk" style="left:1150px;top:250px;">
+          <div class="monitor monitor-idle"><div class="monitor-screen"><div class="screen-lines"><div class="screen-line"></div><div class="screen-line"></div></div></div></div>
+        </div>
+
+        <!-- Decorative glow halos around active desks -->
+        <div style="position:absolute;left:14px;top:44px;width:108px;height:78px;border-radius:10px;background:radial-gradient(ellipse,rgba(0,245,255,0.07) 0%,transparent 70%);pointer-events:none;"></div>
+        <div style="position:absolute;left:204px;top:44px;width:108px;height:78px;border-radius:10px;background:radial-gradient(ellipse,rgba(124,58,237,0.08) 0%,transparent 70%);pointer-events:none;"></div>
+        <div style="position:absolute;left:14px;top:254px;width:108px;height:78px;border-radius:10px;background:radial-gradient(ellipse,rgba(16,185,129,0.07) 0%,transparent 70%);pointer-events:none;"></div>
+        <div style="position:absolute;left:414px;top:44px;width:108px;height:78px;border-radius:10px;background:radial-gradient(ellipse,rgba(245,158,11,0.07) 0%,transparent 70%);pointer-events:none;"></div>
+
+      </div><!-- /office-scene -->
+    </div><!-- /office-container -->
+
+    <!-- ═══════════════ BOTTOM PANELS ═══════════════ -->
+    <div class="bottom-panels">
+
+      <!-- LEFT: ACTIVE AGENTS -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Active Agents</div>
+          <div class="panel-badge">4 running</div>
+        </div>
+        <div class="panel-content">
+
+          <!-- market-research -->
+          <div class="agent-card active-card">
+            <div class="agent-avatar" style="background:rgba(0,245,255,0.12);border:1px solid rgba(0,245,255,0.35);color:#00f5ff;">MR</div>
+            <div class="agent-info">
+              <div class="agent-name">market-research</div>
+              <div class="agent-task">Scraping Gen-Z TikTok engagement metrics · Mission #7</div>
+              <div class="agent-progress">
+                <div class="progress-bar" style="width:67%;background:linear-gradient(90deg,#00f5ff,#0ff8);"></div>
+              </div>
+            </div>
+            <div class="agent-meta">
+              <div class="agent-timer" id="t1">08:14</div>
+              <div class="agent-status-dot dot-active"></div>
+            </div>
+          </div>
+
+          <!-- campaign-strategy -->
+          <div class="agent-card active-card">
+            <div class="agent-avatar" style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.4);color:#a78bfa;">CS</div>
+            <div class="agent-info">
+              <div class="agent-name">campaign-strategy</div>
+              <div class="agent-task">Building 4-week launch funnel · LMU Assignment</div>
+              <div class="agent-progress">
+                <div class="progress-bar" style="width:42%;background:linear-gradient(90deg,#7c3aed,#a78bfa88);"></div>
+              </div>
+            </div>
+            <div class="agent-meta">
+              <div class="agent-timer" id="t2">04:39</div>
+              <div class="agent-status-dot dot-active"></div>
+            </div>
+          </div>
+
+          <!-- audience-insights -->
+          <div class="agent-card active-card">
+            <div class="agent-avatar" style="background:rgba(16,185,129,0.13);border:1px solid rgba(16,185,129,0.38);color:#10b981;">AI</div>
+            <div class="agent-info">
+              <div class="agent-name">audience-insights</div>
+              <div class="agent-task">Persona synthesis · 18-34 wellness consumer segment</div>
+              <div class="agent-progress">
+                <div class="progress-bar" style="width:81%;background:linear-gradient(90deg,#10b981,#34d39988);"></div>
+              </div>
+            </div>
+            <div class="agent-meta">
+              <div class="agent-timer" id="t3">11:02</div>
+              <div class="agent-status-dot dot-active"></div>
+            </div>
+          </div>
+
+          <!-- creative-review -->
+          <div class="agent-card active-card">
+            <div class="agent-avatar" style="background:rgba(245,158,11,0.13);border:1px solid rgba(245,158,11,0.38);color:#f59e0b;">CR</div>
+            <div class="agent-info">
+              <div class="agent-name">creative-review</div>
+              <div class="agent-task">Rubric scoring draft concepts · Brand tone check</div>
+              <div class="agent-progress">
+                <div class="progress-bar" style="width:28%;background:linear-gradient(90deg,#f59e0b,#fbbf2488);"></div>
+              </div>
+            </div>
+            <div class="agent-meta">
+              <div class="agent-timer" id="t4">02:17</div>
+              <div class="agent-status-dot dot-active"></div>
+            </div>
+          </div>
+
+          <!-- competitive-intel idle -->
+          <div class="agent-card">
+            <div class="agent-avatar" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#f87171;">CI</div>
+            <div class="agent-info">
+              <div class="agent-name">competitive-intel</div>
+              <div class="agent-task">Standby · Last: Competitor SWOT analysis</div>
+              <div class="agent-progress">
+                <div class="progress-bar" style="width:100%;background:rgba(239,68,68,0.2);animation:none;"></div>
+              </div>
+            </div>
+            <div class="agent-meta">
+              <div class="agent-timer" style="color:var(--text-dim);">IDLE</div>
+              <div class="agent-status-dot dot-idle"></div>
+            </div>
+          </div>
+
+          <!-- email-marketer idle -->
+          <div class="agent-card">
+            <div class="agent-avatar" style="background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.25);color:#f472b6;">EM</div>
+            <div class="agent-info">
+              <div class="agent-name">email-marketer</div>
+              <div class="agent-task">Standby · Awaiting strategy approval</div>
+              <div class="agent-progress">
+                <div class="progress-bar" style="width:0%;background:rgba(236,72,153,0.2);animation:none;"></div>
+              </div>
+            </div>
+            <div class="agent-meta">
+              <div class="agent-timer" style="color:var(--text-dim);">WAIT</div>
+              <div class="agent-status-dot dot-waiting"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT: ACTIVITY FEED -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Activity Feed</div>
+          <div class="panel-badge">live</div>
+          <div class="pulse-dot" style="margin-left:4px;"></div>
+        </div>
+        <div class="panel-content" id="feed">
+
+          <div class="feed-item border-green">
+            <span class="feed-ts">23:54:01</span>
+            <span class="feed-msg"><strong>audience-insights</strong> → Persona synthesis <em>81% complete</em>. Identified 3 primary sub-segments.</span>
+          </div>
+          <div class="feed-item border-cyan">
+            <span class="feed-ts">23:53:47</span>
+            <span class="feed-msg"><strong>market-research</strong> → Pulled <em>14 sources</em> on Gen-Z wellness trends. Confidence: 88%.</span>
+          </div>
+          <div class="feed-item border-purple">
+            <span class="feed-ts">23:53:22</span>
+            <span class="feed-msg"><strong>campaign-strategy</strong> → Draft funnel structure ready. Awaiting research gate approval.</span>
+          </div>
+          <div class="feed-item border-amber">
+            <span class="feed-ts">23:52:58</span>
+            <span class="feed-msg"><strong>creative-review</strong> → Ingested rubric PDF (LMU_MKTG450_Rubric.pdf). Provisional scoring active.</span>
+          </div>
+          <div class="feed-item border-green">
+            <span class="feed-ts">23:52:31</span>
+            <span class="feed-msg"><strong>J.A.R.V.I.S.</strong> → Mission #7 <em>ACTIVE</em>. Spawned 4 specialist workers.</span>
+          </div>
+          <div class="feed-item border-cyan">
+            <span class="feed-ts">23:51:14</span>
+            <span class="feed-msg"><strong>market-research</strong> → TikTok API rate limit hit. Retrying with fallback source.</span>
+          </div>
+          <div class="feed-item border-purple">
+            <span class="feed-ts">23:50:02</span>
+            <span class="feed-msg"><strong>competitive-intel</strong> → SWOT complete. <em>3 key gaps</em> identified in competitor positioning.</span>
+          </div>
+          <div class="feed-item border-amber" style="opacity:0.7;">
+            <span class="feed-ts">23:48:45</span>
+            <span class="feed-msg"><strong>email-marketer</strong> → Standby. Waiting on strategy gate before drafting sequences.</span>
+          </div>
+          <div class="feed-item border-green" style="opacity:0.55;">
+            <span class="feed-ts">23:47:30</span>
+            <span class="feed-msg"><strong>J.A.R.V.I.S.</strong> → Mission brief accepted. Knowledge base: 4 notes loaded from <em>memory/marketmate/</em>.</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /bottom-panels -->
+  </div><!-- /main-content -->
+</div><!-- /app -->
+
+<script>
+// ─── STARS ───────────────────────────────────────────
+const canvas = document.getElementById('stars');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width  = window.innerWidth  || 1440;
+  canvas.height = window.innerHeight || 900;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+const stars = [];
+for (let i = 0; i < 220; i++) {
+  stars.push({
+    x: Math.random() * 1440,
+    y: Math.random() * 900,
+    r: Math.random() * 1.2 + 0.2,
+    a: Math.random(),
+    speed: Math.random() * 0.008 + 0.003,
+    phase: Math.random() * Math.PI * 2,
+    color: Math.random() > 0.85 ? '#a78bfa' : (Math.random() > 0.7 ? '#00f5ff' : '#ffffff')
+  });
+}
+
+function drawStars(t) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const s of stars) {
+    const alpha = (Math.sin(t * s.speed + s.phase) * 0.5 + 0.5) * 0.7 + 0.1;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle   = s.color;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+let frameCount = 0;
+function loop(t) {
+  drawStars(t * 0.001);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ─── UPTIME COUNTER ──────────────────────────────────
+let uptimeSecs = 6 * 3600 + 42 * 60 + 11;
+const uptimeEl = document.getElementById('uptime');
+setInterval(() => {
+  uptimeSecs++;
+  const h = String(Math.floor(uptimeSecs / 3600)).padStart(2,'0');
+  const m = String(Math.floor((uptimeSecs % 3600) / 60)).padStart(2,'0');
+  const s = String(uptimeSecs % 60).padStart(2,'0');
+  uptimeEl.textContent = `${h}:${m}:${s}`;
+}, 1000);
+
+// ─── TASK TIMERS ─────────────────────────────────────
+const timers = [
+  { el: document.getElementById('t1'), secs: 8 * 60 + 14 },
+  { el: document.getElementById('t2'), secs: 4 * 60 + 39 },
+  { el: document.getElementById('t3'), secs: 11 * 60 + 2 },
+  { el: document.getElementById('t4'), secs: 2 * 60 + 17 },
+];
+setInterval(() => {
+  for (const t of timers) {
+    t.secs++;
+    const m = String(Math.floor(t.secs / 60)).padStart(2,'0');
+    const s = String(t.secs % 60).padStart(2,'0');
+    t.el.textContent = `${m}:${s}`;
+  }
+}, 1000);
+
+// ─── LIVE FEED INJECTION ─────────────────────────────
+const feedMessages = [
+  { cls: 'border-cyan',   msg: '<strong>market-research</strong> → New citation added: <em>Statista 2025 Gen-Z Report</em>. Credibility: ★★★★☆' },
+  { cls: 'border-green',  msg: '<strong>audience-insights</strong> → Segment affinity score updated. Platform preference: TikTok 74%, IG 62%.' },
+  { cls: 'border-purple', msg: '<strong>campaign-strategy</strong> → Content pillar #3 drafted: <em>"Authenticity First"</em>.' },
+  { cls: 'border-amber',  msg: '<strong>creative-review</strong> → Hook A scored 8.4/10 on rubric. Hook B flagged for revision.' },
+  { cls: 'border-green',  msg: '<strong>audience-insights</strong> → Pain point cluster identified: <em>trust + transparency</em>.' },
+  { cls: 'border-cyan',   msg: '<strong>market-research</strong> → TAM estimate: $4.2B wellness niche (2025 data).' },
+];
+let feedIdx = 0;
+const feedEl = document.getElementById('feed');
+
+setInterval(() => {
+  const now = new Date();
+  const ts  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  const msg = feedMessages[feedIdx % feedMessages.length];
+  feedIdx++;
+
+  const item = document.createElement('div');
+  item.className = `feed-item ${msg.cls}`;
+  item.innerHTML = `<span class="feed-ts">${ts}</span><span class="feed-msg">${msg.msg}</span>`;
+  feedEl.insertBefore(item, feedEl.firstChild);
+
+  // trim to 12 items
+  while (feedEl.children.length > 12) feedEl.removeChild(feedEl.lastChild);
+}, 7000);
+
+// ─── TASKS TODAY TICKER ──────────────────────────────
+let tasksCount = 17;
+const tasksEl = document.getElementById('tasks-count');
+setInterval(() => {
+  tasksCount++;
+  tasksEl.textContent = tasksCount;
+}, 45000);
+
+// ─── PROGRESS BAR ANIMATION ──────────────────────────
+// Slowly increment the active progress bars
+const progressBars = document.querySelectorAll('.active-card .progress-bar');
+const progressWidths = [67, 42, 81, 28];
+setInterval(() => {
+  progressBars.forEach((bar, i) => {
+    progressWidths[i] = Math.min(99, progressWidths[i] + (Math.random() * 0.4));
+    bar.style.width = progressWidths[i].toFixed(1) + '%';
+  });
+}, 3000);
+</script>
+
+</body>
+</html>

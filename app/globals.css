@@ -2,264 +2,1026 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Press+Start+2P&display=swap');
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   J.A.R.V.I.S. COMMAND CENTER — GLOBALS
+   Deep space dark · Neon cyber · Glassmorphism · Sci-fi UI
+═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --background: #0a0a0f;
-  --surface: #111827;
-  --border: #1f2937;
-  --active: #06b6d4;
-  --queued: #f59e0b;
-  --completed: #10b981;
-  --neon-cyan: #06b6d4;
-  --neon-purple: #a855f7;
-  --neon-green: #22c55e;
-  --warm-amber: #f59e0b;
-  --warm-orange: #f97316;
+  /* Core palette */
+  --bg-deep:       #050510;
+  --bg-mid:        #08081a;
+  --bg-surface:    #0d0d24;
+  --bg-card:       rgba(255, 255, 255, 0.04);
+  --bg-card-hover: rgba(255, 255, 255, 0.07);
+
+  /* Neon accents */
+  --neon-cyan:     #00f5ff;
+  --neon-purple:   #7c3aed;
+  --neon-green:    #10b981;
+  --neon-amber:    #f59e0b;
+  --neon-pink:     #ec4899;
+  --neon-blue:     #3b82f6;
+  --neon-orange:   #f97316;
+
+  /* Borders */
+  --border-dim:    rgba(255, 255, 255, 0.06);
+  --border-mid:    rgba(255, 255, 255, 0.10);
+  --border-glow:   rgba(0, 245, 255, 0.30);
+
+  /* Text */
+  --text-bright:   #e2e8f0;
+  --text-mid:      #94a3b8;
+  --text-dim:      #475569;
+  --text-ghost:    #1e293b;
+
+  /* Semantic */
+  --active:        var(--neon-cyan);
+  --idle:          var(--neon-amber);
+  --success:       var(--neon-green);
+  --error:         #ef4444;
+
+  /* Legacy compat */
+  --background:    var(--bg-deep);
+  --surface:       var(--bg-surface);
+  --border:        var(--border-dim);
 }
 
-* {
-  box-sizing: border-box;
+/* ─── Reset / base ─────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+html {
+  height: 100%;
+  background: var(--bg-deep);
 }
 
 body {
-  background-color: var(--background);
-  color: white;
+  background: var(--bg-deep);
+  color: var(--text-bright);
   font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100%;
+  overflow-x: hidden;
 }
 
-/* Pixel font for retro labels */
-.font-pixel {
-  font-family: 'Press Start 2P', monospace;
-}
+/* ─── Fonts ────────────────────────────────────────────────────────────────── */
+.font-orbitron { font-family: 'Orbitron', 'JetBrains Mono', monospace; }
+.font-pixel    { font-family: 'Press Start 2P', monospace; }
+.font-mono     { font-family: 'JetBrains Mono', monospace; }
+.font-inter    { font-family: 'Inter', system-ui, sans-serif; }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #111827;
-}
-::-webkit-scrollbar-thumb {
-  background: #374151;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
-}
+/* ─── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: #1e2a4a; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); box-shadow: 0 0 6px var(--neon-cyan); }
 
-/* Glass card */
-.glass {
-  background: rgba(17, 24, 39, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(31, 41, 55, 0.8);
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   STAR FIELD BACKGROUND
+═══════════════════════════════════════════════════════════════════════════ */
 
-/* Animated grid background */
-.grid-bg {
+.bg-starfield {
+  position: relative;
+}
+.bg-starfield::before {
+  content: '';
+  position: fixed;
+  inset: 0;
   background-image:
-    linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 40% 8%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 80% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 75%, rgba(255,255,255,0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 70%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 85%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 60% 50%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 90%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5% 50%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(2px 2px at 48% 22%, rgba(0,245,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 45%, rgba(124,58,237,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 32% 60%, rgba(255,255,255,0.35) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+  animation: star-twinkle 6s ease-in-out infinite alternate;
+}
+
+@keyframes star-twinkle {
+  0%   { opacity: 0.6; }
+  33%  { opacity: 1; }
+  66%  { opacity: 0.7; }
+  100% { opacity: 0.9; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BACKGROUND EFFECTS
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* Deep space dot grid */
+.bg-space-grid {
+  background-color: var(--bg-deep);
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(0, 245, 255, 0.05) 0%, transparent 60%),
+    radial-gradient(circle at 90% 80%, rgba(124, 58, 237, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 10% 90%, rgba(16, 185, 129, 0.03) 0%, transparent 40%),
+    radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
+}
+
+/* Animated grid lines */
+.bg-animated-grid {
+  background-image:
+    linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
   background-size: 40px 40px;
+  animation: grid-drift 20s linear infinite;
 }
 
-/* Office floor pattern */
-.floor-pattern {
-  background-image:
-    linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.02) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.02) 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+@keyframes grid-drift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 40px 40px; }
 }
 
-/* Break room floor */
-.break-room-floor {
-  background-image: repeating-linear-gradient(
-    90deg,
-    rgba(255,255,255,0.015) 0px,
-    rgba(255,255,255,0.015) 1px,
-    transparent 1px,
-    transparent 40px
-  ), repeating-linear-gradient(
-    180deg,
-    rgba(255,255,255,0.015) 0px,
-    rgba(255,255,255,0.015) 1px,
-    transparent 1px,
-    transparent 40px
+/* Subtle animated scan line overlay */
+.bg-scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.12) 2px,
+    rgba(0, 0, 0, 0.12) 4px
   );
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.35;
 }
 
-/* ═══════════════════════════════════════════════════════
-   CHARACTER ANIMATIONS
-═══════════════════════════════════════════════════════ */
+/* Office floor tile */
+.floor-pattern {
+  background-color: rgba(13, 13, 36, 0.9);
+  background-image:
+    linear-gradient(rgba(0,245,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
 
-/* Idle bobbing */
+/* Break room warm floor */
+.break-room-floor {
+  background-color: rgba(15, 10, 30, 0.9);
+  background-image:
+    linear-gradient(rgba(245,158,11,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,158,11,0.02) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLASSMORPHISM COMPONENTS
+═══════════════════════════════════════════════════════════════════════════ */
+
+.glass {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--border-mid);
+}
+
+.glass-cyan {
+  background: rgba(0, 245, 255, 0.04);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 245, 255, 0.18);
+  box-shadow: 0 0 20px rgba(0, 245, 255, 0.08), inset 0 0 20px rgba(0, 245, 255, 0.03);
+}
+
+.glass-purple {
+  background: rgba(124, 58, 237, 0.06);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.10), inset 0 0 20px rgba(124, 58, 237, 0.04);
+}
+
+.glass-amber {
+  background: rgba(245, 158, 11, 0.04);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(245, 158, 11, 0.20);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.08), inset 0 0 20px rgba(245, 158, 11, 0.03);
+}
+
+.glass-green {
+  background: rgba(16, 185, 129, 0.04);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(16, 185, 129, 0.20);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLOW EFFECTS
+═══════════════════════════════════════════════════════════════════════════ */
+
+.glow-cyan    { box-shadow: 0 0 15px rgba(0, 245, 255, 0.5), 0 0 40px rgba(0, 245, 255, 0.2); }
+.glow-purple  { box-shadow: 0 0 15px rgba(124, 58, 237, 0.5), 0 0 40px rgba(124, 58, 237, 0.2); }
+.glow-green   { box-shadow: 0 0 15px rgba(16, 185, 129, 0.5), 0 0 40px rgba(16, 185, 129, 0.2); }
+.glow-amber   { box-shadow: 0 0 15px rgba(245, 158, 11, 0.5), 0 0 40px rgba(245, 158, 11, 0.2); }
+
+.text-glow-cyan   { text-shadow: 0 0 10px rgba(0, 245, 255, 0.8), 0 0 25px rgba(0, 245, 255, 0.4); }
+.text-glow-purple { text-shadow: 0 0 10px rgba(124, 58, 237, 0.8), 0 0 25px rgba(124, 58, 237, 0.4); }
+.text-glow-green  { text-shadow: 0 0 10px rgba(16, 185, 129, 0.8), 0 0 25px rgba(16, 185, 129, 0.4); }
+.text-glow-amber  { text-shadow: 0 0 10px rgba(245, 158, 11, 0.8), 0 0 25px rgba(245, 158, 11, 0.4); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ORBITRON ZONE LABELS
+═══════════════════════════════════════════════════════════════════════════ */
+
+.zone-label {
+  font-family: 'Orbitron', 'JetBrains Mono', monospace;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.zone-label-glow-cyan {
+  font-family: 'Orbitron', 'JetBrains Mono', monospace;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: #00f5ff;
+  text-shadow: 0 0 15px rgba(0,245,255,0.9), 0 0 30px rgba(0,245,255,0.4), 0 0 60px rgba(0,245,255,0.15);
+}
+
+.zone-label-glow-amber {
+  font-family: 'Orbitron', 'JetBrains Mono', monospace;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: #f59e0b;
+  text-shadow: 0 0 15px rgba(245,158,11,0.9), 0 0 30px rgba(245,158,11,0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* Character idle bob */
 @keyframes idle-bob {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-3px); }
+  50%       { transform: translateY(-4px); }
 }
 
-/* Walking left-right */
+/* Character walk left-right */
 @keyframes walk-right {
-  0% { transform: translateX(0px) scaleX(1); }
-  49% { transform: translateX(40px) scaleX(1); }
-  50% { transform: translateX(40px) scaleX(-1); }
-  99% { transform: translateX(0px) scaleX(-1); }
+  0%   { transform: translateX(0px) scaleX(1); }
+  49%  { transform: translateX(50px) scaleX(1); }
+  50%  { transform: translateX(50px) scaleX(-1); }
+  99%  { transform: translateX(0px) scaleX(-1); }
   100% { transform: translateX(0px) scaleX(1); }
 }
 
-/* Typing at desk */
+/* Typing lean */
 @keyframes typing-lean {
   0%, 100% { transform: translateY(0px) rotate(-2deg); }
-  50% { transform: translateY(2px) rotate(2deg); }
+  50%       { transform: translateY(2px)  rotate(2deg); }
 }
 
-/* Arm/hand typing motion */
+/* Arm typing motion */
 @keyframes arm-type {
   0%, 100% { transform: translateY(0px); }
-  25% { transform: translateY(-2px); }
-  75% { transform: translateY(2px); }
+  25%       { transform: translateY(-2px); }
+  75%       { transform: translateY(2px); }
 }
 
-/* Laptop screen glow pulse */
+/* Laptop screen glow */
 @keyframes screen-glow {
-  0%, 100% { opacity: 0.7; box-shadow: 0 0 8px var(--neon-cyan); }
-  50% { opacity: 1; box-shadow: 0 0 20px var(--neon-cyan), 0 0 40px rgba(6,182,212,0.3); }
+  0%, 100% { opacity: 0.75; box-shadow: 0 0 10px var(--neon-cyan); }
+  50%       { opacity: 1;    box-shadow: 0 0 24px var(--neon-cyan), 0 0 48px rgba(0,245,255,0.3); }
 }
 
-/* Stretching after task */
+/* Stretch celebration */
 @keyframes stretch {
-  0% { transform: scaleY(1) rotate(0deg); }
-  25% { transform: scaleY(1.15) rotate(-5deg); }
-  50% { transform: scaleY(1.2) rotate(5deg); }
-  75% { transform: scaleY(1.1) rotate(-3deg); }
+  0%   { transform: scaleY(1) rotate(0deg); }
+  25%  { transform: scaleY(1.2) rotate(-5deg); }
+  50%  { transform: scaleY(1.25) rotate(5deg); }
+  75%  { transform: scaleY(1.1) rotate(-3deg); }
   100% { transform: scaleY(1) rotate(0deg); }
 }
 
-/* TV watching head nod */
+/* TV watching nod */
 @keyframes tv-watch {
   0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(3deg); }
-  75% { transform: rotate(-3deg); }
+  25%       { transform: rotate(3deg); }
+  75%       { transform: rotate(-3deg); }
 }
 
-/* Water cooler chat bounce */
+/* TV static animation */
+@keyframes tv-static {
+  0%   { background-position: 0% 50%; opacity: 0.8; }
+  25%  { background-position: 100% 50%; opacity: 1; }
+  50%  { background-position: 50% 0%; opacity: 0.7; }
+  75%  { background-position: 0% 100%; opacity: 0.9; }
+  100% { background-position: 0% 50%; opacity: 0.8; }
+}
+
+@keyframes tv-color-cycle {
+  0%   { border-color: rgba(0,245,255,0.6); box-shadow: 0 0 12px rgba(0,245,255,0.4); }
+  20%  { border-color: rgba(124,58,237,0.6); box-shadow: 0 0 12px rgba(124,58,237,0.4); }
+  40%  { border-color: rgba(236,72,153,0.6); box-shadow: 0 0 12px rgba(236,72,153,0.4); }
+  60%  { border-color: rgba(245,158,11,0.6); box-shadow: 0 0 12px rgba(245,158,11,0.4); }
+  80%  { border-color: rgba(16,185,129,0.6); box-shadow: 0 0 12px rgba(16,185,129,0.4); }
+  100% { border-color: rgba(0,245,255,0.6); box-shadow: 0 0 12px rgba(0,245,255,0.4); }
+}
+
+/* Chat bounce */
 @keyframes chat-bounce {
   0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-4px) scale(1.05); }
+  50%       { transform: translateY(-5px) scale(1.06); }
 }
 
-/* Neon blink */
+/* Neon sign blink */
 @keyframes neon-blink {
-  0%, 95%, 100% { opacity: 1; }
-  96% { opacity: 0.4; }
-  97% { opacity: 1; }
-  98% { opacity: 0.6; }
+  0%, 94%, 96%, 98%, 100% { opacity: 1; }
+  95% { opacity: 0.3; }
+  97% { opacity: 0.6; }
 }
 
 /* Screen flicker */
 @keyframes screen-flicker {
-  0%, 94%, 96%, 100% { opacity: 0.9; }
-  95% { opacity: 0.3; }
+  0%, 93%, 95%, 100% { opacity: 0.92; }
+  94%                { opacity: 0.2;  }
 }
 
-/* Couch idle sway */
+/* Couch sway */
 @keyframes couch-sway {
   0%, 100% { transform: rotate(0deg); }
-  33% { transform: rotate(2deg); }
-  66% { transform: rotate(-1deg); }
+  33%       { transform: rotate(2deg); }
+  66%       { transform: rotate(-1deg); }
 }
 
-/* Status indicator pulse */
+/* Status pulse */
 @keyframes status-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.9); }
+  50%       { opacity: 0.55; transform: scale(0.88); }
 }
 
-/* Glow ring animations (kept from original) */
+/* System online ping */
+@keyframes online-ping {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.7); }
+  70%  { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+
+/* Border glow pulse */
 @keyframes glow-pulse-active {
-  0%, 100% { box-shadow: 0 0 8px rgba(6, 182, 212, 0.6), 0 0 20px rgba(6, 182, 212, 0.3); }
-  50% { box-shadow: 0 0 16px rgba(6, 182, 212, 0.9), 0 0 40px rgba(6, 182, 212, 0.5); }
+  0%, 100% { box-shadow: 0 0 8px rgba(0,245,255,0.5),  0 0 20px rgba(0,245,255,0.2); }
+  50%       { box-shadow: 0 0 20px rgba(0,245,255,0.9), 0 0 50px rgba(0,245,255,0.4); }
+}
+@keyframes glow-pulse-amber {
+  0%, 100% { box-shadow: 0 0 8px rgba(245,158,11,0.5),  0 0 20px rgba(245,158,11,0.2); }
+  50%       { box-shadow: 0 0 20px rgba(245,158,11,0.9), 0 0 50px rgba(245,158,11,0.4); }
+}
+@keyframes glow-pulse-green {
+  0%, 100% { box-shadow: 0 0 8px rgba(16,185,129,0.5),  0 0 20px rgba(16,185,129,0.2); }
+  50%       { box-shadow: 0 0 20px rgba(16,185,129,0.9), 0 0 50px rgba(16,185,129,0.4); }
 }
 
-@keyframes glow-pulse-queued {
-  0%, 100% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.6), 0 0 20px rgba(245, 158, 11, 0.3); }
-  50% { box-shadow: 0 0 16px rgba(245, 158, 11, 0.9), 0 0 40px rgba(245, 158, 11, 0.5); }
-}
-
-@keyframes glow-pulse-completed {
-  0%, 100% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.6), 0 0 20px rgba(16, 185, 129, 0.3); }
-  50% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.9), 0 0 40px rgba(16, 185, 129, 0.5); }
-}
-
-/* Walking character */
-@keyframes walk-casual {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(15px) translateY(-1px); }
-  50% { transform: translateX(30px); }
-  75% { transform: translateX(15px) translateY(-1px); }
-}
-
-/* Legs walking */
+/* Leg walk */
 @keyframes left-leg {
-  0%, 100% { transform: rotate(-15deg); }
-  50% { transform: rotate(15deg); }
+  0%, 100% { transform: rotate(-18deg); }
+  50%       { transform: rotate(18deg);  }
 }
-
 @keyframes right-leg {
-  0%, 100% { transform: rotate(15deg); }
-  50% { transform: rotate(-15deg); }
+  0%, 100% { transform: rotate(18deg);  }
+  50%       { transform: rotate(-18deg); }
 }
 
-/* Arms swing */
-@keyframes left-arm-walk {
-  0%, 100% { transform: rotate(20deg); }
-  50% { transform: rotate(-20deg); }
-}
-
-@keyframes right-arm-walk {
-  0%, 100% { transform: rotate(-20deg); }
-  50% { transform: rotate(20deg); }
-}
-
-/* Typing fingers */
-@keyframes finger-type {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
-
-/* TV screen content */
+/* TV scan */
 @keyframes tv-content {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
-.avatar-active {
-  animation: glow-pulse-active 2s ease-in-out infinite;
+/* Particle sparkle */
+@keyframes sparkle {
+  0%   { transform: scale(0) rotate(0deg);   opacity: 1; }
+  100% { transform: scale(1.5) rotate(180deg); opacity: 0; }
 }
 
-.avatar-queued {
-  animation: glow-pulse-queued 3s ease-in-out infinite;
+/* Slide-in fade for feed items */
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.avatar-completed {
-  animation: glow-pulse-completed 4s ease-in-out infinite;
+/* Slide in from right for agent cards */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
-/* Office scene specific */
-.office-char-idle { animation: idle-bob 2s ease-in-out infinite; }
-.office-char-working { animation: typing-lean 0.4s ease-in-out infinite; }
-.office-char-tv { animation: tv-watch 3s ease-in-out infinite; }
-.office-char-couch { animation: couch-sway 4s ease-in-out infinite; }
-.office-char-chat { animation: chat-bounce 1.5s ease-in-out infinite; }
+/* Orbit scanner on header */
+@keyframes orbit {
+  from { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+}
+
+/* Pulsing ring */
+@keyframes ring-pulse {
+  0%   { transform: scale(1);   opacity: 0.7; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* Data counter tick */
+@keyframes counter-tick {
+  0%   { opacity: 0.5; transform: translateY(-4px); }
+  100% { opacity: 1;   transform: translateY(0); }
+}
+
+/* Floating hologram shimmer */
+@keyframes holo-shimmer {
+  0%, 100% { background-position: -200% center; }
+  50%       { background-position: 200% center; }
+}
+
+/* Active agent card entrance */
+@keyframes card-enter {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Standby pulse for empty state */
+@keyframes standby-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%       { opacity: 0.9; transform: scale(1.03); }
+}
+
+/* Float for standby characters */
+@keyframes standby-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+/* Stat number spring */
+@keyframes stat-spring {
+  0%   { transform: scale(0.85) translateY(6px); opacity: 0; }
+  60%  { transform: scale(1.08) translateY(-2px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILITY ANIMATION CLASSES
+═══════════════════════════════════════════════════════════════════════════ */
+
+.office-char-idle    { animation: idle-bob 2.2s ease-in-out infinite; }
+.office-char-working { animation: typing-lean 0.38s ease-in-out infinite; }
+.office-char-tv      { animation: tv-watch 3s ease-in-out infinite; }
+.office-char-couch   { animation: couch-sway 4s ease-in-out infinite; }
+.office-char-chat    { animation: chat-bounce 1.4s ease-in-out infinite; }
 .office-char-stretch { animation: stretch 1s ease-in-out 1; }
 
-.screen-active { animation: screen-glow 1.5s ease-in-out infinite; }
+.screen-active  { animation: screen-glow 1.6s ease-in-out infinite; }
 .screen-flicker { animation: screen-flicker 8s ease-in-out infinite; }
-.neon-sign { animation: neon-blink 6s ease-in-out infinite; }
-.status-dot { animation: status-pulse 2s ease-in-out infinite; }
+.neon-sign      { animation: neon-blink 7s ease-in-out infinite; }
+.status-dot     { animation: status-pulse 2s ease-in-out infinite; }
+.online-ping    { animation: online-ping 2s ease-out infinite; }
+
+.avatar-active    { animation: glow-pulse-active 2s ease-in-out infinite; }
+.avatar-idle      { animation: glow-pulse-amber 3s ease-in-out infinite; }
+.avatar-completed { animation: glow-pulse-green 4s ease-in-out infinite; }
+
+.feed-item    { animation: slide-in-up 0.35s ease-out forwards; }
+.card-enter   { animation: card-enter 0.4s ease-out forwards; }
+.stat-spring  { animation: stat-spring 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+/* TV with animated screen */
+.tv-screen-animated {
+  animation: tv-color-cycle 4s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOLOGRAPHIC TEXT EFFECT
+═══════════════════════════════════════════════════════════════════════════ */
+
+.holo-text {
+  background: linear-gradient(
+    135deg,
+    #00f5ff 0%,
+    #7c3aed 25%,
+    #00f5ff 50%,
+    #10b981 75%,
+    #00f5ff 100%
+  );
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: holo-shimmer 4s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HUD BORDER CORNERS
+═══════════════════════════════════════════════════════════════════════════ */
+
+.hud-corner {
+  position: relative;
+}
+.hud-corner::before,
+.hud-corner::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+}
+.hud-corner::before {
+  top: -1px; left: -1px;
+  border-top: 2px solid var(--neon-cyan);
+  border-left: 2px solid var(--neon-cyan);
+}
+.hud-corner::after {
+  bottom: -1px; right: -1px;
+  border-bottom: 2px solid var(--neon-cyan);
+  border-right: 2px solid var(--neon-cyan);
+}
+
+/* Progress bar shimmer */
+.progress-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.progress-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%);
+  animation: holo-shimmer 2s linear infinite;
+}
+
+/* Activity feed scrollable container */
+.activity-feed-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #1e2a4a var(--bg-deep);
+  max-height: 320px;
+}
+.activity-feed-scroll::-webkit-scrollbar { width: 3px; }
+.activity-feed-scroll::-webkit-scrollbar-track { background: transparent; }
+.activity-feed-scroll::-webkit-scrollbar-thumb { background: rgba(0,245,255,0.25); border-radius: 2px; }
+.activity-feed-scroll::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
+
+/* Agent card hover lift */
+.agent-card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: default;
+}
+.agent-card-hover:hover {
+  transform: translateY(-2px) translateX(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TAILWIND COMPAT — custom color tokens in utility classes
+═══════════════════════════════════════════════════════════════════════════ */
+
+.bg-background   { background-color: var(--bg-deep); }
+.bg-surface      { background-color: var(--bg-surface); }
+.border-border   { border-color: var(--border-dim); }
+.text-cyan-500   { color: var(--neon-cyan); }
+.text-cyan-400   { color: #67e8f9; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WALKING PATH KEYFRAMES — 10 pre-programmed routes for 100+ agents
+   All use CSS transforms only (GPU-accelerated, no JS animation loops).
+   Origin: each agent's absolute positioned base point in the office floor.
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* PATH 0: Coffee Run — desk → break area → water cooler → back */
+@keyframes path-coffee-run {
+  0%   { transform: translate(0px,    0px); }
+  10%  { transform: translate(-20px, 30px); }
+  20%  { transform: translate(-40px, 80px); }
+  30%  { transform: translate(-60px, 130px); }
+  40%  { transform: translate(-80px, 180px) scaleX(-1); }
+  50%  { transform: translate(-40px, 200px) scaleX(-1); }
+  60%  { transform: translate(20px,  200px) scaleX(-1); }
+  70%  { transform: translate(40px,  140px); }
+  80%  { transform: translate(20px,  80px); }
+  90%  { transform: translate(10px,  30px); }
+  100% { transform: translate(0px,    0px); }
+}
+
+/* PATH 1: Meeting Walk — desk → conference area → lounge → back */
+@keyframes path-meeting-walk {
+  0%   { transform: translate(0px,    0px); }
+  12%  { transform: translate(80px,  -10px); }
+  25%  { transform: translate(180px, -30px) scaleX(-1); }
+  35%  { transform: translate(260px, -50px) scaleX(-1); }
+  45%  { transform: translate(300px, -40px) scaleX(-1); }
+  55%  { transform: translate(260px, 20px); }
+  65%  { transform: translate(160px, 60px); }
+  75%  { transform: translate(80px,  40px); }
+  87%  { transform: translate(30px,  20px); }
+  100% { transform: translate(0px,    0px); }
+}
+
+/* PATH 2: Stretch Break — desk → open corridor loop → back */
+@keyframes path-stretch-break {
+  0%   { transform: translate(0px,  0px); }
+  15%  { transform: translate(60px, 20px); }
+  30%  { transform: translate(120px, 10px) scaleX(-1); }
+  45%  { transform: translate(100px, -20px) scaleX(-1); }
+  60%  { transform: translate(40px,  -10px) scaleX(-1); }
+  75%  { transform: translate(-20px, 10px); }
+  88%  { transform: translate(-10px, 15px); }
+  100% { transform: translate(0px,   0px); }
+}
+
+/* PATH 3: Lounge Hang — couch → TV → water cooler → back to couch */
+@keyframes path-lounge-hang {
+  0%   { transform: translate(0px,  0px); }
+  20%  { transform: translate(80px, -10px) scaleX(-1); }
+  35%  { transform: translate(150px,-20px) scaleX(-1); }
+  50%  { transform: translate(200px, 10px) scaleX(-1); }
+  65%  { transform: translate(200px, 30px); }
+  78%  { transform: translate(100px, 20px); }
+  90%  { transform: translate(30px,  10px); }
+  100% { transform: translate(0px,   0px); }
+}
+
+/* PATH 4: Window Gazer — slow perimeter walk along right wall */
+@keyframes path-window-gazer {
+  0%   { transform: translate(0px,   0px); }
+  16%  { transform: translate(0px,   80px); }
+  33%  { transform: translate(-10px, 160px); }
+  50%  { transform: translate(0px,   240px); }
+  66%  { transform: translate(-10px, 160px) scaleX(-1); }
+  83%  { transform: translate(0px,   80px) scaleX(-1); }
+  100% { transform: translate(0px,   0px); }
+}
+
+/* PATH 5: Busy Bee — fast tight loops near desk cluster */
+@keyframes path-busy-bee {
+  0%   { transform: translate(0px,   0px); }
+  12%  { transform: translate(30px, -10px); }
+  25%  { transform: translate(50px,  10px) scaleX(-1); }
+  37%  { transform: translate(30px,  25px) scaleX(-1); }
+  50%  { transform: translate(0px,   20px); }
+  62%  { transform: translate(-25px, 10px); }
+  75%  { transform: translate(-30px, -5px) scaleX(-1); }
+  87%  { transform: translate(-15px, -12px) scaleX(-1); }
+  100% { transform: translate(0px,    0px); }
+}
+
+/* PATH 6: Social Butterfly — weaves between multiple desk clusters */
+@keyframes path-social-butterfly {
+  0%   { transform: translate(0px,     0px); }
+  10%  { transform: translate(-100px, -60px); }
+  22%  { transform: translate(-220px, -80px) scaleX(-1); }
+  33%  { transform: translate(-280px, -40px) scaleX(-1); }
+  44%  { transform: translate(-200px,  60px); }
+  55%  { transform: translate(-80px,   120px); }
+  65%  { transform: translate(60px,    140px) scaleX(-1); }
+  75%  { transform: translate(100px,   80px) scaleX(-1); }
+  85%  { transform: translate(60px,    20px) scaleX(-1); }
+  93%  { transform: translate(20px,   -10px); }
+  100% { transform: translate(0px,     0px); }
+}
+
+/* PATH 7: Break Room Regular — coffee machine → couch → table → repeat */
+@keyframes path-break-room {
+  0%   { transform: translate(0px,   0px); }
+  18%  { transform: translate(50px,  -15px); }
+  30%  { transform: translate(100px, -10px) scaleX(-1); }
+  42%  { transform: translate(130px,  10px) scaleX(-1); }
+  55%  { transform: translate(110px,  30px); }
+  67%  { transform: translate(60px,   25px); }
+  80%  { transform: translate(20px,   10px); }
+  92%  { transform: translate(5px,   -5px); }
+  100% { transform: translate(0px,    0px); }
+}
+
+/* PATH 8: Corridor Cruiser — walks the full length of the main hallway */
+@keyframes path-corridor {
+  0%   { transform: translate(0px,   0px); }
+  20%  { transform: translate(200px, 5px); }
+  40%  { transform: translate(400px, -5px); }
+  50%  { transform: translate(500px,  0px) scaleX(-1); }
+  70%  { transform: translate(300px,  5px) scaleX(-1); }
+  90%  { transform: translate(100px, -5px) scaleX(-1); }
+  100% { transform: translate(0px,    0px); }
+}
+
+/* PATH 9: Corner Loop — tight corner-to-corner circuits */
+@keyframes path-corner-loop {
+  0%   { transform: translate(0px,   0px); }
+  25%  { transform: translate(40px,  30px) scaleX(-1); }
+  50%  { transform: translate(0px,   60px) scaleX(-1); }
+  75%  { transform: translate(-40px, 30px); }
+  100% { transform: translate(0px,    0px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   OFFICE FLOOR LAYOUT HELPERS
+═══════════════════════════════════════════════════════════════════════════ */
+
+.office-floor {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Active agent at desk — glow ring */
+@keyframes active-desk-glow {
+  0%, 100% { box-shadow: 0 0 6px var(--neon-cyan),  0 0 15px rgba(0,245,255,0.3); }
+  50%       { box-shadow: 0 0 12px var(--neon-cyan), 0 0 30px rgba(0,245,255,0.5); }
+}
+
+/* Walking character leg swing — used for tiny walkers */
+@keyframes tiny-walk-left {
+  0%, 100% { transform: rotate(-15deg); }
+  50%       { transform: rotate(15deg); }
+}
+@keyframes tiny-walk-right {
+  0%, 100% { transform: rotate(15deg); }
+  50%       { transform: rotate(-15deg); }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HUMAN-STYLE WALKING ANIMATIONS — personality-driven office workers
+   8 personality types, body-part sub-animations, funny touches.
+   All GPU-accelerated (transform/opacity only). No layout shifts.
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── BODY-LEVEL PERSONALITY BOBS ───────────────────────────────────────── */
+
+/* 0: Speedwalker — leans forward, fast */
+@keyframes body-speedwalk {
+  0%,100% { transform: translateY(0px) rotate(-3deg); }
+  25%      { transform: translateY(-2px) rotate(-2deg); }
+  50%      { transform: translateY(0px) rotate(-3deg); }
+  75%      { transform: translateY(-2px) rotate(-2deg); }
+}
+
+/* 1: Shuffler — barely lifts, sags */
+@keyframes body-shuffle {
+  0%,100% { transform: translateY(0px) rotate(0deg); }
+  50%      { transform: translateY(-1px) rotate(0.5deg); }
+}
+
+/* 2: Bouncer — big spring up */
+@keyframes body-bounce {
+  0%,100% { transform: translateY(0px) rotate(0deg); }
+  25%      { transform: translateY(-5px) rotate(-1deg); }
+  50%      { transform: translateY(0px) rotate(1deg); }
+  75%      { transform: translateY(-5px) rotate(-1deg); }
+}
+
+/* 3: Stoic — perfectly upright */
+@keyframes body-stoic {
+  0%,100% { transform: translateY(0px) rotate(0deg); }
+  50%      { transform: translateY(-1.5px) rotate(0deg); }
+}
+
+/* 4: Phone Walker — slight forward hunch */
+@keyframes body-phone {
+  0%,100% { transform: translateY(0px) rotate(2deg); }
+  50%      { transform: translateY(-2px) rotate(2deg); }
+}
+
+/* 5: Coffee Carrier — careful wobble */
+@keyframes body-coffee {
+  0%,100% { transform: translateY(0px) rotate(-0.5deg); }
+  25%      { transform: translateY(-2px) rotate(1deg); }
+  50%      { transform: translateY(0px) rotate(-0.5deg); }
+  75%      { transform: translateY(-2px) rotate(0.5deg); }
+}
+
+/* 6: Enthusiast — perky skip */
+@keyframes body-enthusiast {
+  0%,100% { transform: translateY(0px) rotate(-1deg); }
+  20%      { transform: translateY(-5px) rotate(1deg); }
+  40%      { transform: translateY(-1px) rotate(-1deg); }
+  60%      { transform: translateY(-4px) rotate(1deg); }
+  80%      { transform: translateY(-1px) rotate(-1deg); }
+}
+
+/* 7: Wanderer — slight slouch, curves */
+@keyframes body-wander {
+  0%,100% { transform: translateY(0px) rotate(0deg); }
+  30%      { transform: translateY(-3px) rotate(2deg); }
+  60%      { transform: translateY(-1px) rotate(-2deg); }
+}
+
+/* Lounge area: slow relaxed sway */
+@keyframes body-lounge {
+  0%,100% { transform: translateY(0px) rotate(-3deg); }
+  33%      { transform: translateY(-2px) rotate(3deg); }
+  66%      { transform: translateY(-1px) rotate(-2deg); }
+}
+
+/* ─── LEG SWINGS ────────────────────────────────────────────────────────── */
+@keyframes leg-left-normal {
+  0%,100% { transform: rotate(-20deg); }
+  50%      { transform: rotate(20deg); }
+}
+@keyframes leg-right-normal {
+  0%,100% { transform: rotate(20deg); }
+  50%      { transform: rotate(-20deg); }
+}
+@keyframes leg-left-shuffle {
+  0%,100% { transform: rotate(-6deg) translateY(2px); }
+  50%      { transform: rotate(6deg)  translateY(0px); }
+}
+@keyframes leg-right-shuffle {
+  0%,100% { transform: rotate(6deg)  translateY(2px); }
+  50%      { transform: rotate(-6deg) translateY(0px); }
+}
+@keyframes leg-left-bounce {
+  0%,100% { transform: rotate(-30deg); }
+  50%      { transform: rotate(30deg); }
+}
+@keyframes leg-right-bounce {
+  0%,100% { transform: rotate(30deg); }
+  50%      { transform: rotate(-30deg); }
+}
+@keyframes leg-left-stoic {
+  0%,100% { transform: rotate(-8deg); }
+  50%      { transform: rotate(8deg); }
+}
+@keyframes leg-right-stoic {
+  0%,100% { transform: rotate(8deg); }
+  50%      { transform: rotate(-8deg); }
+}
+
+/* ─── ARM SWINGS ────────────────────────────────────────────────────────── */
+@keyframes arm-left-normal {
+  0%,100% { transform: rotate(18deg); }
+  50%      { transform: rotate(-18deg); }
+}
+@keyframes arm-right-normal {
+  0%,100% { transform: rotate(-18deg); }
+  50%      { transform: rotate(18deg); }
+}
+@keyframes arm-left-pump {
+  0%,100% { transform: rotate(30deg); }
+  50%      { transform: rotate(-30deg); }
+}
+@keyframes arm-right-pump {
+  0%,100% { transform: rotate(-30deg); }
+  50%      { transform: rotate(30deg); }
+}
+@keyframes arm-left-phone {
+  0%,100% { transform: rotate(5deg); }
+  50%      { transform: rotate(-5deg); }
+}
+@keyframes arm-right-phone {
+  0%,100% { transform: rotate(-40deg) translateY(-3px); }
+  50%      { transform: rotate(-35deg) translateY(-3px); }
+}
+@keyframes arm-left-coffee {
+  0%,100% { transform: rotate(-35deg); }
+  50%      { transform: rotate(-30deg); }
+}
+@keyframes arm-right-coffee {
+  0%,100% { transform: rotate(35deg); }
+  50%      { transform: rotate(30deg); }
+}
+@keyframes arm-left-stoic {
+  0%,100% { transform: rotate(5deg); }
+  50%      { transform: rotate(-5deg); }
+}
+@keyframes arm-right-stoic {
+  0%,100% { transform: rotate(-5deg); }
+  50%      { transform: rotate(5deg); }
+}
+
+/* ─── HEAD TILTS ────────────────────────────────────────────────────────── */
+@keyframes head-tilt-normal {
+  0%,100% { transform: rotate(-2deg); }
+  50%      { transform: rotate(2deg); }
+}
+@keyframes head-tilt-phone {
+  0%,100% { transform: rotate(12deg) translateY(2px); }
+  50%      { transform: rotate(10deg) translateY(2px); }
+}
+@keyframes head-lounge-sway {
+  0%,100% { transform: rotate(-5deg); }
+  33%      { transform: rotate(5deg); }
+  66%      { transform: rotate(-3deg); }
+}
+@keyframes head-wander {
+  0%,25%  { transform: rotate(-8deg); }
+  50%,75% { transform: rotate(8deg); }
+  100%    { transform: rotate(-8deg); }
+}
+
+/* ─── FUNNY TOUCHES ─────────────────────────────────────────────────────── */
+
+/* Happy dance — wiggle on task complete */
+@keyframes happy-dance {
+  0%   { transform: translateY(0px) rotate(0deg) scale(1); }
+  10%  { transform: translateY(-6px) rotate(-8deg) scale(1.1); }
+  20%  { transform: translateY(-2px) rotate(8deg) scale(1.05); }
+  30%  { transform: translateY(-7px) rotate(-6deg) scale(1.15); }
+  40%  { transform: translateY(-1px) rotate(6deg) scale(1.05); }
+  50%  { transform: translateY(-8px) rotate(-4deg) scale(1.2); }
+  60%  { transform: translateY(0px)  rotate(4deg) scale(1.1); }
+  70%  { transform: translateY(-5px) rotate(-3deg) scale(1.05); }
+  80%  { transform: translateY(0px)  rotate(2deg) scale(1); }
+  90%  { transform: translateY(-2px) rotate(-1deg) scale(1); }
+  100% { transform: translateY(0px)  rotate(0deg) scale(1); }
+}
+
+/* Exclamation pop — task assigned bubble */
+@keyframes exclaim-pop {
+  0%   { transform: scale(0) translateY(0px); opacity: 0; }
+  20%  { transform: scale(1.3) translateY(-3px); opacity: 1; }
+  60%  { transform: scale(1)   translateY(-5px); opacity: 1; }
+  100% { transform: scale(0.8) translateY(-8px); opacity: 0; }
+}
+
+/* Trip and recover — the classic stumble */
+@keyframes trip-recover {
+  0%   { transform: translateY(0px) rotate(0deg); }
+  5%   { transform: translateY(2px) rotate(8deg); }
+  10%  { transform: translateY(5px) rotate(18deg); }
+  15%  { transform: translateY(6px) rotate(25deg); }
+  20%  { transform: translateY(4px) rotate(15deg); }
+  25%  { transform: translateY(2px) rotate(8deg); }
+  30%  { transform: translateY(0px) rotate(-3deg); }
+  35%  { transform: translateY(-2px) rotate(2deg); }
+  40%  { transform: translateY(0px) rotate(0deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+/* Stars that appear after trip */
+@keyframes trip-stars {
+  0%   { opacity: 0; transform: scale(0) rotate(0deg); }
+  15%  { opacity: 1; transform: scale(1.2) rotate(-20deg); }
+  50%  { opacity: 1; transform: scale(1)   rotate(20deg); }
+  100% { opacity: 0; transform: scale(0.5) rotate(40deg); }
+}
+
+/* Name label pulse */
+@keyframes name-fade {
+  0%,100% { opacity: 0.3; }
+  50%      { opacity: 0.9; }
+}
+
+/* Desk sit animation */
+@keyframes desk-sit-bob {
+  0%,100% { transform: translateY(2px) rotate(-1deg); }
+  50%      { transform: translateY(3px) rotate(1deg); }
+}
+
+/* Keyboard tap */
+@keyframes key-tap {
+  0%,100% { transform: translateY(0px) rotate(-5deg); }
+  25%      { transform: translateY(-3px) rotate(-8deg); }
+  50%      { transform: translateY(0px) rotate(-3deg); }
+  75%      { transform: translateY(-2px) rotate(-6deg); }
+}
+
+/* Screen reading head tilt */
+@keyframes read-tilt {
+  0%,100% { transform: rotate(-4deg); }
+  33%      { transform: rotate(3deg); }
+  66%      { transform: rotate(-2deg); }
+}
+
+/* Coffee cup wobble */
+@keyframes cup-wobble {
+  0%,100% { transform: rotate(-3deg); }
+  50%      { transform: rotate(3deg); }
+}
+
+/* ─── UTILITY CLASSES ───────────────────────────────────────────────────── */
+.walk-happy-dance { animation: happy-dance 1s ease-in-out 1 !important; }
+.walk-exclaim     { animation: exclaim-pop 0.9s ease-out 1 forwards; }
+.walk-trip        { animation: trip-recover 2.5s ease-in-out 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .stats-grid-responsive {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .main-layout-responsive {
+    flex-direction: column !important;
+  }
+  .sidebar-responsive {
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .office-floor-responsive {
+    height: 380px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid-responsive {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}

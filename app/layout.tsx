@@ -1,13 +1,13 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'J.A.R.V.I.S. Command Center',
-  description: 'Real-time AI agent operations dashboard — 111 specialists, one mission control. Sims-style animated office.',
-  themeColor: '#0a0a0f',
+  description: 'Real-time AI agent operations dashboard, one mission control. Sims-style animated office.',
+}
+
+export const viewport: Viewport = {
+  themeColor: '#050510',
 }
 
 export default function RootLayout({
@@ -20,12 +20,14 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Full font stack: Orbitron (sci-fi headers) + Inter (body) + JetBrains Mono (code/numbers) */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Press+Start+2P&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Press+Start+2P&display=swap"
           rel="stylesheet"
         />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body className={`${inter.className} bg-background text-white antialiased min-h-screen`}>
+      <body style={{ fontFamily: "'Inter', system-ui, sans-serif", background: '#050510', color: '#e2e8f0', margin: 0, padding: 0, minHeight: '100vh' }}>
         {children}
       </body>
     </html>

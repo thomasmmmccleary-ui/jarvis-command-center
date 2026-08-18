@@ -185,7 +185,12 @@ function StatsHeader({
 }: {
   agents: LiveAgent[]; activity: ActivitySummary | null; loading: boolean
 }) {
-  const activeCount = agents.filter(a => a.status === 'active').length
+  // OpenClaw runs multiple concurrent SESSIONS under the same agent id (e.g.
+  // several parallel Slack threads all as "J.A.R.V.I.S."). Counting by
+  // distinct agent id undercounts real concurrent work, so "active now"
+  // uses activity.activeWork (one entry per live session) once it's loaded,
+  // falling back to the roster count before the first activity fetch lands.
+  const activeCount = activity?.activeWork ? activity.activeWork.length : agents.filter(a => a.status === 'active').length
   const idleCount   = agents.filter(a => a.status === 'idle').length
   const done        = activity?.today?.completedMissions?.length ?? 0
   const tokens      = activity?.today?.tokensUsed ?? 0
@@ -1024,7 +1029,12 @@ export default function OfficeScene() {
 
   useEffect(() => {
     fetchData()
-    const t = setInterval(fetchData, 5000)
+    // Bridge now serves both routes from an in-memory cache refreshed every
+    // 5s server-side (see mission-control-bridge.js) instead of shelling
+    // out per-request, so polling faster than that cache's own refresh
+    // doesn't get you fresher data — 3s keeps the UI feeling live without
+    // polling faster than the source of truth actually updates.
+    const t = setInterval(fetchData, 3000)
     return () => clearInterval(t)
   }, [fetchData])
 
@@ -1035,9 +1045,36 @@ export default function OfficeScene() {
     }
   }, [activity?.recentCompleted?.length])
 
-  const activeAgents  = useMemo(() => agents.filter(a => a.status === 'active'),  [agents])
+  // Build one card per live SESSION (activity.activeWork), not one per agent
+  // id — an agent id like "main" can have several concurrent sessions (e.g.
+  // parallel Slack threads), and collapsing them to a single card hides
+  // real concurrent work. Falls back to the roster-based list before the
+  // first activity fetch resolves so the panel isn't empty on initial load.
+  const categoryByAgentId = useMemo(() => new Map(agents.map(a => [a.id, a.category])), [agents])
+  const activeAgents = useMemo(() => {
+    if (!activity?.activeWork) return agents.filter(a => a.status === 'active')
+    return activity.activeWork.map((w): LiveAgent => ({
+      id: w.sessionKey,
+      name: w.agentName,
+      category: categoryByAgentId.get(w.agentId) ?? 'Operations',
+      status: 'active',
+      currentTask: w.task,
+      parentMission: w.parentMission,
+      startedAt: w.startedAt ?? undefined,
+      tokens: w.tokens,
+      contextPct: w.contextPct,
+    }))
+  }, [activity?.activeWork, agents, categoryByAgentId])
   const waitingAgents = useMemo(() => agents.filter(a => a.status === 'waiting'), [agents])
   const idleAgents    = useMemo(() => agents.filter(a => a.status === 'idle'),    [agents])
+  // The 3D office floor animates roster AGENTS (one sprite per agent id), not
+  // sessions — it has no concept of "two sprites for the same agent because
+  // it has two concurrent sessions". So it needs the roster-level active
+  // list (ids matching `agents`), separate from the session-level
+  // `activeAgents` above used for the sidebar cards. Feeding it the
+  // session-keyed list would silently break the walking/desk animation,
+  // since `agent.id` would never match a session's `sessionKey`.
+  const activeRosterAgents = useMemo(() => agents.filter(a => a.status === 'active'), [agents])
 
   return (
     <div
@@ -1127,7 +1164,7 @@ export default function OfficeScene() {
                   style={{ height: '100%', borderRadius: 10, overflow: 'hidden' }}
                 />
               ) : (
-                <OfficeFloor agents={agents} activeAgents={activeAgents} />
+                <OfficeFloor agents={agents} activeAgents={activeRosterAgents} />
               )}
             </div>
 
@@ -1266,7 +1303,7 @@ export default function OfficeScene() {
           <div style={{ padding: '10px 13px', borderTop: '1px solid rgba(255,255,255,0.035)', background: 'rgba(0,0,0,0.35)' }}>
             <div style={{ fontSize: 6.5, color: 'rgba(30,41,59,0.7)', fontFamily: 'JetBrains Mono, monospace', lineHeight: 1.8 }}>
               {activity?.dataSource ?? 'Connecting…'}<br />
-              Auto-refresh · 5s · Zero simulation
+              Auto-refresh · 3s · Zero simulation
             </div>
           </div>
         </motion.div>

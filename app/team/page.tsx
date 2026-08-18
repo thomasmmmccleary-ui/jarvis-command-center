@@ -245,7 +245,10 @@ export default function TeamPage() {
 
   useEffect(() => {
     fetchAgents()
-    const timer = setInterval(fetchAgents, 5000)
+    // Matches the bridge's own 5s cache refresh cadence — see
+    // mission-control-bridge.js. This is the page most directly about "who
+    // is working right now", so it should feel as live as the main view.
+    const timer = setInterval(fetchAgents, 3000)
     return () => clearInterval(timer)
   }, [])
 

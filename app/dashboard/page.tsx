@@ -198,7 +198,10 @@ export default function DashboardPage() {
   const { startPolling, agents, activity } = useAgentStore()
 
   useEffect(() => {
-    const cleanup = startPolling(10_000)
+    // No override — inherit the store's default (3s, matching the bridge's
+    // own cache refresh cadence). This page used to hardcode 10s, so it was
+    // three times slower to reflect live agent activity than the main view.
+    const cleanup = startPolling()
     return cleanup
   }, [startPolling])
 

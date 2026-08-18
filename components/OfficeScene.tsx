@@ -953,20 +953,25 @@ export default function OfficeScene() {
   const feedRef = useRef<HTMLDivElement>(null)
 
   const fetchData = useCallback(async () => {
+    // Fetch independently: activity's underlying data source can be slow
+    // (reads transcript files on jarvis), and a slow/failed activity fetch
+    // must never blank out already-good agent data.
     try {
-      const [agRes, actRes] = await Promise.all([
-        fetch('/api/agents', { cache: 'no-store' }),
-        fetch('/api/activity', { cache: 'no-store' }),
-      ])
+      const agRes = await fetch('/api/agents', { cache: 'no-store' })
       const agData = await agRes.json()
-      const actData = await actRes.json()
       setAgents(agData.agents ?? [])
-      setActivity(actData)
+      setLoading(false)
       setLastUpdate(new Date().toLocaleTimeString())
     } catch (e) {
-      console.error('Fetch error:', e)
-    } finally {
+      console.error('Agents fetch error:', e)
       setLoading(false)
+    }
+    try {
+      const actRes = await fetch('/api/activity', { cache: 'no-store' })
+      const actData = await actRes.json()
+      setActivity(actData)
+    } catch (e) {
+      console.error('Activity fetch error:', e)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

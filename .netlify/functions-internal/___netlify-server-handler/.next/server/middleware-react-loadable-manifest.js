@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST='{"app/page.tsx -> @/components/OfficeScene":{"id":5253,"files":["static/chunks/253.a5d184fd8a048eb7.js"]}}';

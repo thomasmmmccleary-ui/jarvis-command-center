@@ -55,7 +55,9 @@ function formatDuration(ms?: number): string {
   return `${Math.floor(m / 60)}h ${m % 60}m`
 }
 
-function formatTokens(t: number): string {
+function formatTokens(t: number | null | undefined): string {
+  // null = not recorded. Rendering "0" would assert usage we never measured.
+  if (t === null || t === undefined) return '—'
   if (t <= 0) return '0'
   if (t < 1000) return String(t)
   return `${(t / 1000).toFixed(1)}k`
@@ -188,9 +190,9 @@ function TokensByAgent({ missions }: { missions: MissionRecord[] }) {
   const totals = useMemo(() => {
     const map = new Map<string, number>()
     for (const m of missions) {
-      map.set(m.name, (map.get(m.name) ?? 0) + m.tokens)
+      map.set(m.name, (map.get(m.name) ?? 0) + (m.tokens ?? 0))
       for (const s of m.subagents) {
-        map.set(s.label, (map.get(s.label) ?? 0) + s.tokens)
+        map.set(s.label, (map.get(s.label) ?? 0) + (s.tokens ?? 0))
       }
     }
     return Array.from(map.entries())

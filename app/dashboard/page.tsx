@@ -209,9 +209,11 @@ export default function DashboardPage() {
 
   const activeAgents  = agents.filter(a => a.status === 'active')
   const idleAgents    = agents.filter(a => a.status === 'idle')
-  const tokensToday   = activity?.today?.tokensUsed ?? 0
+  const tokensToday   = activity?.today?.tokensUsed ?? null
   const missionsToday = activity?.today?.missionsRun ?? 0
   const activeWork    = activity?.activeWork ?? []
+  // Runs the runtime never terminated. Shown as STALLED, never counted as active.
+  const stuckWork     = activity?.stuckWork ?? []
 
   return (
     <main
@@ -291,8 +293,11 @@ export default function DashboardPage() {
           { label: 'TOTAL AGENTS',   value: agents.length, color: '#7c3aed', icon: '🤖', delay: 0 },
           { label: 'ACTIVE NOW',     value: activeAgents.length,   color: '#00f5ff', icon: '⚡', delay: 0.05 },
           { label: 'MISSIONS TODAY', value: missionsToday,          color: '#10b981', icon: '🎯', delay: 0.1 },
-          { label: 'TOKENS TODAY',   value: tokensToday > 0 ? `${(tokensToday/1000).toFixed(1)}k` : '—', color: '#f97316', icon: '🔢', delay: 0.15 },
+          { label: 'TOKENS TODAY',   value: tokensToday === null ? '—' : `${(tokensToday/1000).toFixed(1)}k`, color: '#f97316', icon: '🔢', delay: 0.15 },
           { label: 'ACTIVE WORK',    value: activeWork.length,      color: '#ec4899', icon: '🔥', delay: 0.2 },
+          ...(stuckWork.length > 0
+            ? [{ label: 'STALLED', value: stuckWork.length, color: '#ef4444', icon: '⚠', delay: 0.25 }]
+            : []),
         ].map((s, i, arr) => (
           <div key={s.label} style={{ borderRight: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: i === 1 && activeAgents.length > 0 ? 'linear-gradient(180deg, rgba(0,245,255,0.03) 0%, transparent 100%)' : 'transparent' }}>
             <StatItem {...s} />
@@ -377,7 +382,7 @@ export default function DashboardPage() {
                     <div style={{ fontSize: 9, color: 'rgba(148,163,184,0.6)', lineHeight: 1.55 }}>
                       {item.task.slice(0, 120)}{item.task.length > 120 ? '…' : ''}
                     </div>
-                    {item.tokens > 0 && (
+                    {item.tokens !== null && item.tokens > 0 && (
                       <div style={{ fontSize: 7.5, color: 'rgba(100,116,139,0.45)', marginTop: 5, fontFamily: 'JetBrains Mono, monospace' }}>
                         {(item.tokens/1000).toFixed(1)}k tokens
                         {item.contextPct !== undefined && ` · ${item.contextPct}% ctx`}
@@ -430,7 +435,7 @@ export default function DashboardPage() {
                       {m.goal.slice(0, 80)}{m.goal.length > 80 ? '…' : ''}
                     </div>
                     <div style={{ fontSize: 7.5, color: 'rgba(100,116,139,0.4)', marginTop: 4, fontFamily: 'JetBrains Mono, monospace' }}>
-                      {m.subagentCount} agents · {(m.tokens/1000).toFixed(1)}k tok
+                      {m.subagentCount} agents{m.tokens !== null ? ` · ${(m.tokens/1000).toFixed(1)}k tok` : ''}
                     </div>
                   </motion.div>
                 ))
@@ -468,7 +473,7 @@ export default function DashboardPage() {
                     {item.goal.slice(0, 80)}{item.goal.length > 80 ? '…' : ''}
                   </div>
                   <div style={{ fontSize: 7.5, color: 'rgba(100,116,139,0.38)', marginTop: 4, fontFamily: 'JetBrains Mono, monospace' }}>
-                    {item.durationMs ? `${Math.round(item.durationMs/60000)}m` : '—'} · {(item.tokens/1000).toFixed(1)}k tok
+                    {item.durationMs ? `${Math.round(item.durationMs/60000)}m` : '—'}{item.tokens !== null ? ` · ${(item.tokens/1000).toFixed(1)}k tok` : ''}
                   </div>
                 </motion.div>
               ))

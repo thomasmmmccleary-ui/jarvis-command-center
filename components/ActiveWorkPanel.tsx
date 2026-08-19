@@ -57,7 +57,7 @@ function WorkItem({ item }: { item: ActiveWorkItem }) {
             {item.contextPct !== undefined && (
               <span className="text-gray-600">{item.contextPct}% ctx</span>
             )}
-            {item.tokens > 0 && (
+            {item.tokens !== null && item.tokens > 0 && (
               <span className="text-gray-600">
                 {item.tokens >= 1000 ? `${(item.tokens/1000).toFixed(1)}k` : item.tokens} tok
               </span>

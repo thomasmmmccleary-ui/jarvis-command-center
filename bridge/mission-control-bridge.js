@@ -272,6 +272,7 @@ function rosterStatusFromRunState(state) {
  * real running run; every other agent is idle by definition, not by decay.
  */
 function getLiveStatus() {
+  truth.beginRequest();
   const runs = truth.getActiveRuns();
   const agents = {};
 
@@ -369,6 +370,7 @@ function missionRecordFromTruth(m) {
  * absent metric must not masquerade as a real zero.
  */
 function computeDashboardSummary() {
+  truth.beginRequest();
   const metrics = truth.getTodayMetrics();
   const missions = truth.getMissions(50).filter((m) => m.createdAt >= metrics.since);
   const missionRecords = missions.map(missionRecordFromTruth);
@@ -433,6 +435,7 @@ function computeDashboardSummary() {
   return Promise.resolve({
     fetchedAt: new Date().toISOString(),
     dataSource: 'openclaw state db (flow_runs/task_runs/audit_events); tokens from sessions snapshot',
+    stateDbError: truth.getLastError(),
     bridgeStartedAt: new Date(BRIDGE_STARTED_AT).toISOString(),
     today: {
       missionsRun: metrics.missions,
@@ -447,6 +450,13 @@ function computeDashboardSummary() {
       // Stated explicitly so the UI never has to guess what this number means.
       // null => unknown (snapshot not yet taken / unavailable), never a real 0.
       tokensUsedBasis: 'lifetime totals for sessions active today (no per-turn token data exists in the state DB)',
+      // The sessions snapshot only ever advances on success. If that subprocess
+      // starts failing, the last good totals would otherwise be served forever as
+      // if current. Publish their age and error so staleness is visible, not implied.
+      tokensUsedAt: sessionsSnapshot.fetchedAt ? new Date(sessionsSnapshot.fetchedAt).toISOString() : null,
+      tokensUsedAgeMs: sessionsSnapshot.fetchedAt ? Date.now() - sessionsSnapshot.fetchedAt : null,
+      tokensUsedStale: sessionsSnapshot.fetchedAt ? Date.now() - sessionsSnapshot.fetchedAt > 5 * 60 * 1000 : true,
+      tokensUsedError: sessionsSnapshot.error,
       completedMissions: missionRecords.filter((m) => m.status === 'done'),
       activeMissions: missionRecords.filter((m) => m.status === 'running'),
       failedMissions: missionRecords.filter((m) => m.status === 'failed'),

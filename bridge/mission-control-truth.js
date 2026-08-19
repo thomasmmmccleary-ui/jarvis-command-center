@@ -35,8 +35,21 @@ const DB_PATH =
 const RUN_FAILURE_STATUSES = new Set(['failed', 'timed_out', 'lost']);
 
 let db = null;
-/** Last DB error, surfaced to the API so callers can render 'unknown' not 'idle'. */
+/**
+ * Last DB error, surfaced to the API so callers can render 'unknown' not 'idle'.
+ *
+ * Sticky within a request. Previously a successful reopen cleared this, so a
+ * query that failed against one table was erased by any later successful query
+ * before the caller read it — the exact "assert confidently when truth is
+ * unknown" failure this module exists to prevent. Callers clear it explicitly
+ * via beginRequest() at the start of a read cycle.
+ */
 let lastError = null;
+
+/** Start a fresh read cycle: any error after this point belongs to this request. */
+function beginRequest() {
+  lastError = null;
+}
 
 /**
  * Open (or reuse) a read-only handle. WAL-safe: readers never block the gateway's writes.
@@ -46,7 +59,6 @@ function getDb() {
   if (db) return db;
   try {
     db = new DatabaseSync(DB_PATH, { readOnly: true });
-    lastError = null;
     // Keep reads snappy and never hang the HTTP handler behind a writer.
     db.exec('PRAGMA busy_timeout = 250;');
     return db;
@@ -525,5 +537,6 @@ module.exports = {
   getDeliveryFailures,
   getDbHealth,
   getLastError: () => lastError,
+  beginRequest,
   DB_PATH,
 };

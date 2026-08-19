@@ -377,7 +377,7 @@ export default function DashboardPage() {
                     <div style={{ fontSize: 9, color: 'rgba(148,163,184,0.6)', lineHeight: 1.55 }}>
                       {item.task.slice(0, 120)}{item.task.length > 120 ? '…' : ''}
                     </div>
-                    {item.tokens > 0 && (
+                    {item.tokens !== null && item.tokens > 0 && (
                       <div style={{ fontSize: 7.5, color: 'rgba(100,116,139,0.45)', marginTop: 5, fontFamily: 'JetBrains Mono, monospace' }}>
                         {(item.tokens/1000).toFixed(1)}k tokens
                         {item.contextPct !== undefined && ` · ${item.contextPct}% ctx`}
@@ -430,7 +430,7 @@ export default function DashboardPage() {
                       {m.goal.slice(0, 80)}{m.goal.length > 80 ? '…' : ''}
                     </div>
                     <div style={{ fontSize: 7.5, color: 'rgba(100,116,139,0.4)', marginTop: 4, fontFamily: 'JetBrains Mono, monospace' }}>
-                      {m.subagentCount} agents · {(m.tokens/1000).toFixed(1)}k tok
+                      {m.subagentCount} agents{m.tokens !== null ? ` · ${(m.tokens/1000).toFixed(1)}k tok` : ''}
                     </div>
                   </motion.div>
                 ))
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                     {item.goal.slice(0, 80)}{item.goal.length > 80 ? '…' : ''}
                   </div>
                   <div style={{ fontSize: 7.5, color: 'rgba(100,116,139,0.38)', marginTop: 4, fontFamily: 'JetBrains Mono, monospace' }}>
-                    {item.durationMs ? `${Math.round(item.durationMs/60000)}m` : '—'} · {(item.tokens/1000).toFixed(1)}k tok
+                    {item.durationMs ? `${Math.round(item.durationMs/60000)}m` : '—'}{item.tokens !== null ? ` · ${(item.tokens/1000).toFixed(1)}k tok` : ''}
                   </div>
                 </motion.div>
               ))

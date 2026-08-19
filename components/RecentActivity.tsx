@@ -51,7 +51,7 @@ function CompletedRow({ item, index }: { item: CompletedItem; index: number }) {
         <p className="text-[10px] text-gray-600 line-clamp-2 italic">{item.outcome}</p>
         <div className="flex gap-2 mt-1 text-[10px] font-mono text-gray-700">
           {item.durationMs && <span>{formatDuration(item.durationMs)}</span>}
-          {item.tokens > 0 && (
+          {item.tokens !== null && item.tokens > 0 && (
             <span>{item.tokens >= 1000 ? `${(item.tokens/1000).toFixed(1)}k` : item.tokens} tok</span>
           )}
         </div>

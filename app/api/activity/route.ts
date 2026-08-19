@@ -8,7 +8,8 @@ export interface SessionEvent {
   key: string
   status: 'running' | 'done' | 'failed' | 'killed' | 'unknown'
   startedAt: string | null
-  tokens: number
+  /** null = UNKNOWN (no per-item token data exists in the state DB), never a real 0. */
+  tokens: number | null
   label: string
   request?: string
   response?: string
@@ -22,7 +23,8 @@ export interface MissionRecord {
   startedAt: string | null
   completedAt?: string
   durationMs?: number
-  tokens: number
+  /** null = UNKNOWN (no per-item token data exists in the state DB), never a real 0. */
+  tokens: number | null
   channel: string
   subagentCount: number
   subagents: SessionEvent[]
@@ -34,7 +36,8 @@ export interface ActiveWorkItem {
   agentName: string
   task: string
   startedAt: string | null
-  tokens: number
+  /** null = UNKNOWN (no per-item token data exists in the state DB), never a real 0. */
+  tokens: number | null
   contextPct?: number
   parentMission?: string
 }
@@ -45,7 +48,8 @@ export interface CompletedItem {
   goal: string
   completedAt: string | null
   durationMs?: number
-  tokens: number
+  /** null = UNKNOWN (no per-item token data exists in the state DB), never a real 0. */
+  tokens: number | null
   outcome: string
 }
 

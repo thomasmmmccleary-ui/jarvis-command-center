@@ -87,7 +87,7 @@ function MissionCard({ mission, index }: { mission: MissionRecord; index: number
       <div className="flex items-center gap-3 text-[10px] font-mono text-gray-600">
         <span>{formatTime(mission.startedAt)}</span>
         {mission.durationMs && <span>{formatDuration(mission.durationMs)}</span>}
-        {mission.tokens > 0 && <span>{formatTokens(mission.tokens)} tok</span>}
+        {mission.tokens !== null && mission.tokens > 0 && <span>{formatTokens(mission.tokens)} tok</span>}
         {mission.subagentCount > 0 && (
           <span className="text-violet-500">{mission.subagentCount} subagent{mission.subagentCount !== 1 ? 's' : ''}</span>
         )}

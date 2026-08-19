@@ -343,8 +343,10 @@ function missionRecordFromTruth(m) {
     label: primary.label || primary.agentId || 'mission',
     channel: 'runtime',
     subagentCount: m.agents.length,
-    // Token totals are not recorded per task_run; 0 keeps arithmetic safe.
-    tokens: 0,
+    // Per-task token totals are not recorded anywhere in the state DB. null means
+    // UNKNOWN, not zero — same contract as today.tokensUsed. The UI omits or
+    // renders an em dash rather than claiming a mission used 0 tokens.
+    tokens: null,
     goal: (m.goal || '').slice(0, 250),
     status,
     startedAt: m.createdAt ? new Date(m.createdAt).toISOString() : null,
@@ -382,7 +384,7 @@ function computeDashboardSummary() {
       sessionKey: r.childSessionKey || r.taskId,
       agentId: r.agentId,
       agentName: r.agentId === 'main' ? 'J.A.R.V.I.S.' : (r.label || r.agentId),
-      tokens: 0,
+      tokens: null,
       agent: r.agentId,
       label: r.label || r.agentId,
       // Real current verb from a real in-flight tool call, or the plain run state.
@@ -407,7 +409,7 @@ function computeDashboardSummary() {
       return {
         id: rec.id,
         sessionKey: rec.id,
-        tokens: 0,
+        tokens: null,
         agent: rec.agent,
         label: rec.label,
         goal: rec.goal,

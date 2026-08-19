@@ -532,7 +532,7 @@ function TickerBar({ agentCount }: { agentCount: number }) {
 }
 
 // ─── Activity Feed Item with Framer Motion ───────────────────────────────
-function FeedItem({ item, index }: { item: { label: string; goal: string; tokens: number; durationMs?: number; completedAt: string | null }; index: number }) {
+function FeedItem({ item, index }: { item: { label: string; goal: string; tokens: number | null; durationMs?: number; completedAt: string | null }; index: number }) {
   const elapsed = item.completedAt ? Math.round((Date.now() - new Date(item.completedAt).getTime()) / 60000) : 0
   const timeLabel = elapsed < 60 ? `${elapsed}m ago` : `${Math.floor(elapsed / 60)}h ago`
   // Use a color from category palette based on label hash
@@ -558,7 +558,7 @@ function FeedItem({ item, index }: { item: { label: string; goal: string; tokens
       </div>
       <div style={{ fontSize: 8.5, color: 'rgba(148,163,184,0.55)', lineHeight: 1.4, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.goal}</div>
       <div style={{ fontSize: 7.5, color: 'rgba(100,116,139,0.45)', marginTop: 4, fontFamily: 'JetBrains Mono, monospace' }}>
-        {item.durationMs ? `${Math.round(item.durationMs / 60000)}m` : '—'} · {(item.tokens / 1000).toFixed(1)}k tok
+        {item.durationMs ? `${Math.round(item.durationMs / 60000)}m` : '—'}{item.tokens !== null ? ` · ${(item.tokens / 1000).toFixed(1)}k tok` : ''}
       </div>
     </motion.div>
   )
@@ -1135,7 +1135,7 @@ export default function OfficeScene() {
       currentTask: w.task,
       parentMission: w.parentMission,
       startedAt: w.startedAt ?? undefined,
-      tokens: w.tokens,
+      tokens: w.tokens ?? undefined,
       contextPct: w.contextPct,
     }))
   }, [activity?.activeWork, agents, categoryByAgentId])

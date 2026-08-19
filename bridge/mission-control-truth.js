@@ -134,7 +134,13 @@ function getActiveRuns() {
     agentId: r.agent_id,
     label: r.label,
     task: r.task,
-    state: classifyTask(r),
+    // Staleness must live in `state`, not only a side flag. Consumers filtering on
+    // state === 'ACTIVE' (activeCount, activeWork) otherwise kept counting a
+    // crashed-gateway run as live work while the roster showed it failed — a
+    // dashboard contradicting itself.
+    state: (r.status === 'running' && !!r.started_at && Date.now() - r.started_at > STALE_MS)
+      ? 'STUCK'
+      : classifyTask(r),
     flowId: r.parent_flow_id,
     parentTaskId: r.parent_task_id,
     childSessionKey: r.child_session_key,

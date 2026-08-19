@@ -103,7 +103,7 @@ function getDashboardSummary() {
       fetchedAt: new Date().toISOString(),
       dataSource: 'warming up — first snapshot not ready yet',
       bridgeStartedAt: new Date(BRIDGE_STARTED_AT).toISOString(),
-      today: { missionsRun: 0, subagentsLaunched: 0, tokensUsed: 0, completedToday: 0, failedToday: 0, completedMissions: [], activeMissions: [], failedMissions: [] },
+      today: { missionsRun: 0, subagentsLaunched: 0, tokensUsed: null, completedToday: 0, failedToday: 0, completedMissions: [], activeMissions: [], failedMissions: [] },
       activeWork: [],
       recentCompleted: [],
     }
@@ -120,7 +120,8 @@ const TRUTH_TICK_MS = 3000;
 setInterval(() => {
   // Must run unconditionally: this is the ONLY writer of summaryCache, and
   // /api/dashboard-summary serves that cache. Gating on SSE clients froze the
-  // summary at boot for every plain fetch consumer. Measured full tick ~11.5ms.
+  // summary at boot for every plain fetch consumer. Benchmarked at ~17.5ms p50
+  // per tick = 0.58% event-loop occupancy on this box.
   computeDashboardSummary().then((summary) => {
     summaryCache.data = summary;
     summaryCache.computedAt = Date.now();
@@ -388,7 +389,9 @@ function computeDashboardSummary() {
       agent: r.agentId,
       label: r.label || r.agentId,
       // Real current verb from a real in-flight tool call, or the plain run state.
-      activity: tool ? `${tool.toolName}` : r.state === 'WAITING' ? 'queued' : 'running',
+      activity: r.state === 'STUCK'
+        ? 'stuck - no terminal event'
+        : tool ? `${tool.toolName}` : r.state === 'WAITING' ? 'queued' : 'running',
       task: (r.task || '').slice(0, 250),
       startedAt: r.startedAt ? new Date(r.startedAt).toISOString() : null,
       elapsedMs: r.elapsedMs,
@@ -510,7 +513,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/api/metrics') {
       return sendJson(res, 200, {
         today: truth.getTodayMetrics(),
-        toolLatencies: truth.getTodayMetrics().toolCalls,
+        toolLatencySamples: truth.getToolLatencies(Date.now() - 24 * 60 * 60 * 1000).length,
       });
     }
 

@@ -105,6 +105,9 @@ function getDashboardSummary() {
       bridgeStartedAt: new Date(BRIDGE_STARTED_AT).toISOString(),
       today: { missionsRun: 0, subagentsLaunched: 0, tokensUsed: null, completedToday: 0, failedToday: 0, completedMissions: [], activeMissions: [], failedMissions: [] },
       activeWork: [],
+      // Declared even while warming up: ActivitySummary requires it, and an absent
+      // key would make the type lie to every consumer.
+      stuckWork: [],
       recentCompleted: [],
     }
   );

@@ -378,7 +378,13 @@ function computeDashboardSummary() {
   const runs = truth.getActiveRuns();
   const currentTools = truth.getCurrentActivityByRun(runs.map((r) => r.runId).filter(Boolean));
 
-  const activeWork = runs.map((r) => {
+  // A run with no terminal event for over an hour is not live work — the gateway
+  // died mid-turn. Leaving it in activeWork made the ACTIVE WORK / ACTIVE NOW
+  // tiles overcount and made OfficeScene draw it as a normal pulsing live card,
+  // which is precisely the agent-shown-working-forever bug this branch exists to
+  // kill. Split rather than drop, so the information is surfaced, not lost.
+  const isStuck = (r) => r.state === 'STUCK';
+  const toWorkItem = (r) => {
     const tool = currentTools[r.runId];
     return {
       id: r.taskId,
@@ -400,7 +406,10 @@ function computeDashboardSummary() {
       state: r.state,
       missionId: r.flowId || null,
     };
-  });
+  };
+
+  const activeWork = runs.filter((r) => !isStuck(r)).map(toWorkItem);
+  const stuckWork = runs.filter(isStuck).map(toWorkItem);
 
   // M4: the ended-filter must run over a wider window BEFORE slicing. Taking 25
   // missions and then filtering meant a burst of in-flight missions could push
@@ -462,6 +471,9 @@ function computeDashboardSummary() {
       failedMissions: missionRecords.filter((m) => m.status === 'failed'),
     },
     activeWork,
+    // Runs the runtime never terminated. Deliberately separate from activeWork so
+    // no consumer can accidentally count them as live.
+    stuckWork,
     recentCompleted,
   });
 }

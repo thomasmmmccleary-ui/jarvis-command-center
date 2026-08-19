@@ -212,6 +212,8 @@ export default function DashboardPage() {
   const tokensToday   = activity?.today?.tokensUsed ?? null
   const missionsToday = activity?.today?.missionsRun ?? 0
   const activeWork    = activity?.activeWork ?? []
+  // Runs the runtime never terminated. Shown as STALLED, never counted as active.
+  const stuckWork     = activity?.stuckWork ?? []
 
   return (
     <main
@@ -293,6 +295,9 @@ export default function DashboardPage() {
           { label: 'MISSIONS TODAY', value: missionsToday,          color: '#10b981', icon: '🎯', delay: 0.1 },
           { label: 'TOKENS TODAY',   value: tokensToday === null ? '—' : `${(tokensToday/1000).toFixed(1)}k`, color: '#f97316', icon: '🔢', delay: 0.15 },
           { label: 'ACTIVE WORK',    value: activeWork.length,      color: '#ec4899', icon: '🔥', delay: 0.2 },
+          ...(stuckWork.length > 0
+            ? [{ label: 'STALLED', value: stuckWork.length, color: '#ef4444', icon: '⚠', delay: 0.25 }]
+            : []),
         ].map((s, i, arr) => (
           <div key={s.label} style={{ borderRight: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: i === 1 && activeAgents.length > 0 ? 'linear-gradient(180deg, rgba(0,245,255,0.03) 0%, transparent 100%)' : 'transparent' }}>
             <StatItem {...s} />

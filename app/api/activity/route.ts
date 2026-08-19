@@ -34,6 +34,14 @@ export interface ActiveWorkItem {
   sessionKey: string
   agentId: string
   agentName: string
+  /**
+   * Real lifecycle state from the runtime ledger, never inferred from timestamps.
+   * 'STUCK' means the run never reached a terminal event (gateway died mid-turn);
+   * such items are excluded from `activeWork` and surfaced in `stuckWork` instead.
+   */
+  state: 'ACTIVE' | 'WAITING' | 'DELIVERING' | 'STUCK' | 'CANCELLED' | 'UNKNOWN'
+  /** Concise current verb, e.g. a live tool name or 'stuck - no terminal event'. */
+  activity: string
   task: string
   startedAt: string | null
   /** null = UNKNOWN (no per-item token data exists in the state DB), never a real 0. */
@@ -80,6 +88,12 @@ export interface ActivitySummary {
     failedMissions: MissionRecord[]
   }
   activeWork: ActiveWorkItem[]
+  /**
+   * Runs the runtime started but never terminated. Deliberately separate from
+   * activeWork so no consumer can count them as live work — that overcounting is
+   * the agent-shown-working-forever bug. Render as stalled, not active.
+   */
+  stuckWork: ActiveWorkItem[]
   recentCompleted: CompletedItem[]
 }
 
@@ -117,6 +131,7 @@ export async function GET() {
           failedMissions: [],
         },
         activeWork: [],
+        stuckWork: [],
         recentCompleted: [],
       } satisfies ActivitySummary,
       { status: 500 }

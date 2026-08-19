@@ -395,8 +395,11 @@ function computeDashboardSummary() {
     };
   });
 
+  // M4: the ended-filter must run over a wider window BEFORE slicing. Taking 25
+  // missions and then filtering meant a burst of in-flight missions could push
+  // every completed one out of the window, making finished work disappear.
   const recentCompleted = truth
-    .getMissions(25)
+    .getMissions(200)
     .filter((m) => m.endedAt)
     .slice(0, 10)
     .map((m) => {
@@ -436,6 +439,9 @@ function computeDashboardSummary() {
       undeliveredToday: metrics.undelivered,
       toolCalls: metrics.toolCalls,
       avgRuntimeMs: metrics.avgRuntimeMs,
+      // Stated explicitly so the UI never has to guess what this number means.
+      // null => unknown (snapshot not yet taken / unavailable), never a real 0.
+      tokensUsedBasis: 'lifetime totals for sessions active today (no per-turn token data exists in the state DB)',
       completedMissions: missionRecords.filter((m) => m.status === 'done'),
       activeMissions: missionRecords.filter((m) => m.status === 'running'),
       failedMissions: missionRecords.filter((m) => m.status === 'failed'),

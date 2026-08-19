@@ -22,7 +22,8 @@ function formatTime(iso: string | null | undefined): string {
   }
 }
 
-function formatTokens(n: number): string {
+function formatTokens(n: number | null | undefined): string {
+  if (n === null || n === undefined) return '—'
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
   return String(n)
 }

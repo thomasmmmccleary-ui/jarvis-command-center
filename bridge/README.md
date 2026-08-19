@@ -56,10 +56,13 @@ are reported by the `NO_ORPHANED_AGENT_RUNS` invariant instead.
 
 ## Known limitations
 
-- **Token counts** are the one figure the state DB does not record, so a slow
-  (60s) `openclaw sessions` call is still made *solely* for `tokensUsed`. It is
-  reported as `null`, never `0`, when unavailable — an absent metric must not
-  masquerade as a real zero.
+- **Token counts** are the one figure the state DB does not record (verified: no
+  runtime table has a token column), so a slow (60s) `openclaw sessions` call is
+  still made *solely* for `tokensUsed`. It is reported as `null`, never `0`, when
+  unavailable — an absent metric must not masquerade as a real zero, and the UI
+  renders `—` for null. `tokensUsedBasis` states the caveat inline: these are
+  **lifetime totals for sessions active today**, not a true today-only delta. A
+  real daily delta is not derivable, since nothing records per-turn usage.
 - **Agent attribution for subagents**: `task_runs.agent_id` and
   `audit_events.agent_id` record the *owning* agent (`main`) rather than the
   specialist. The specialist identity lives in `subagent_runs.task_name` /

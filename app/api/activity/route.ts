@@ -56,7 +56,19 @@ export interface ActivitySummary {
   today: {
     missionsRun: number
     subagentsLaunched: number
-    tokensUsed: number
+    /**
+     * Total tokens for sessions touched today.
+     *
+     * `null` means UNKNOWN, not zero: OpenClaw's state DB does not record token
+     * counts anywhere, so this comes from a separate 60s `openclaw sessions`
+     * snapshot. Before that snapshot lands, or if the bridge is unreachable, the
+     * true value is unknown and must render as "—" rather than a confident 0.
+     *
+     * Caveat: this is each session's LIFETIME total for sessions active today,
+     * not a true today-only delta. A real daily delta is not derivable — no
+     * runtime table records per-turn token usage.
+     */
+    tokensUsed: number | null
     completedToday: number
     failedToday: number
     completedMissions: MissionRecord[]
@@ -92,7 +104,8 @@ export async function GET() {
         today: {
           missionsRun: 0,
           subagentsLaunched: 0,
-          tokensUsed: 0,
+          // Bridge unreachable: token usage is unknown, NOT zero.
+          tokensUsed: null,
           completedToday: 0,
           failedToday: 0,
           completedMissions: [],

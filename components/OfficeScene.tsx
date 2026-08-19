@@ -203,7 +203,7 @@ function StatsHeader({
   const activeCount = activity?.activeWork ? activity.activeWork.length : agents.filter(a => a.status === 'active').length
   const idleCount   = agents.filter(a => a.status === 'idle').length
   const done        = activity?.today?.completedMissions?.length ?? 0
-  const tokens      = activity?.today?.tokensUsed ?? 0
+  const tokens      = activity?.today?.tokensUsed ?? null
 
   // The "ACTIVE NOW" tile used to render a sparkline built from
   // Math.random() jitter around the real count, dressed up with a comment
@@ -218,7 +218,7 @@ function StatsHeader({
     { label: 'ACTIVE NOW',   value: activeCount,          color: '#00f5ff', icon: '⚡', spark: null },
     { label: 'ON STANDBY',   value: idleCount,            color: '#f59e0b', icon: '☕', spark: null },
     { label: 'DONE TODAY',   value: done,                 color: '#10b981', icon: '✅', spark: null },
-    { label: 'TOKENS',       value: tokens > 0 ? `${(tokens / 1000).toFixed(1)}k` : '—', color: '#f97316', icon: '🔢', spark: null },
+    { label: 'TOKENS',       value: tokens === null ? '—' : `${(tokens / 1000).toFixed(1)}k`, color: '#f97316', icon: '🔢', spark: null },
     { label: 'BRIDGE UPTIME', value: <UptimeCounter bridgeStartedAt={activity?.bridgeStartedAt} />, color: '#94a3b8', icon: '⏱', spark: null },
   ]
 

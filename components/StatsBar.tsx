@@ -3,7 +3,9 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAgentStore } from '@/lib/store'
 
-function formatTokens(n: number): string {
+function formatTokens(n: number | null | undefined): string {
+  // null/undefined mean "not measured", which is not the same as zero usage.
+  if (n === null || n === undefined) return '—'
   if (n >= 1_000_000) return `${(n/1_000_000).toFixed(1)}M`
   if (n >= 1000) return `${(n/1000).toFixed(0)}k`
   return String(n)
@@ -16,7 +18,7 @@ export function StatsBar() {
     active: agents.filter(a => a.status === 'active').length,
     idle: agents.filter(a => a.status === 'idle').length,
     missionsToday: activity?.today?.missionsRun ?? 0,
-    tokensToday: activity?.today?.tokensUsed ?? 0,
+    tokensToday: activity?.today?.tokensUsed ?? null,
   }
 
   const cards = [
@@ -52,7 +54,7 @@ export function StatsBar() {
     },
     {
       label: 'TOKENS TODAY',
-      value: stats.tokensToday > 0 ? formatTokens(stats.tokensToday) : '—',
+      value: formatTokens(stats.tokensToday),
       sub: activity ? `${activity.today.subagentsLaunched} subagents` : 'loading',
       color: 'text-amber-400',
       bg: 'bg-amber-500/10',

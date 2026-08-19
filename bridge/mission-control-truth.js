@@ -30,9 +30,13 @@ const DB_PATH =
   path.join(os.homedir(), '.openclaw', 'state', 'openclaw.sqlite');
 
 /** Terminal statuses that mean the run itself did not succeed. */
-const RUN_FAILURE_STATUSES = new Set(['failed', 'timed_out', 'lost', 'cancelled']);
+// REVIEW-FIXES applied. Cancelled is a deliberate stop, not a failure — counting
+// it as ERROR inflated failedToday and marked the agent red.
+const RUN_FAILURE_STATUSES = new Set(['failed', 'timed_out', 'lost']);
 
 let db = null;
+/** Last DB error, surfaced to the API so callers can render 'unknown' not 'idle'. */
+let lastError = null;
 
 /**
  * Open (or reuse) a read-only handle. WAL-safe: readers never block the gateway's writes.
@@ -42,11 +46,13 @@ function getDb() {
   if (db) return db;
   try {
     db = new DatabaseSync(DB_PATH, { readOnly: true });
+    lastError = null;
     // Keep reads snappy and never hang the HTTP handler behind a writer.
-    db.exec('PRAGMA busy_timeout = 3000;');
+    db.exec('PRAGMA busy_timeout = 250;');
     return db;
   } catch (err) {
     console.error('[truth] cannot open state db read-only:', err.message);
+    lastError = err.message;
     db = null;
     return null;
   }
@@ -65,6 +71,7 @@ function query(sql, params = []) {
     return handle.prepare(sql).all(...params);
   } catch (err) {
     console.error('[truth] query failed:', err.message);
+    lastError = err.message;
     resetDb();
     return [];
   }
@@ -84,6 +91,7 @@ function classifyTask(row) {
   const status = String(row.status || '').toLowerCase();
   const delivery = String(row.delivery_status || '').toLowerCase();
 
+  if (status === 'cancelled') return 'CANCELLED';
   if (status === 'running') return 'ACTIVE';
   if (status === 'queued') return 'WAITING';
   if (RUN_FAILURE_STATUSES.has(status)) return 'ERROR';
@@ -115,7 +123,11 @@ function getActiveRuns() {
       WHERE status IN ('running','queued')
       ORDER BY COALESCE(started_at, created_at) DESC`
   );
+  const STALE_MS = 60 * 60 * 1000;
   return rows.map((r) => ({
+    // A crashed gateway leaves rows stuck in 'running' forever. Flag them so the
+    // UI shows 'stuck' rather than confidently claiming the agent is working.
+    stale: r.status === 'running' && !!r.started_at && Date.now() - r.started_at > STALE_MS,
     taskId: r.task_id,
     runId: r.run_id,
     runtime: r.runtime,
@@ -484,7 +496,8 @@ function getDbHealth() {
   const rows = query('SELECT COUNT(*) AS c FROM audit_events');
   return {
     path: DB_PATH,
-    ok: rows.length > 0,
+    ok: rows.length > 0 && lastError === null,
+    error: lastError,
     auditEvents: rows[0] ? rows[0].c : null,
   };
 }
@@ -505,5 +518,6 @@ module.exports = {
   getInvariantViolations,
   getDeliveryFailures,
   getDbHealth,
+  getLastError: () => lastError,
   DB_PATH,
 };

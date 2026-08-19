@@ -118,11 +118,13 @@ setInterval(refreshSessionsCache, SESSIONS_REFRESH_MS);
 // can tick fast without the event-loop stalls the old file-reading path caused.
 const TRUTH_TICK_MS = 3000;
 setInterval(() => {
-  if (!sseClients.size) return; // nothing listening — don't do the work
+  // Must run unconditionally: this is the ONLY writer of summaryCache, and
+  // /api/dashboard-summary serves that cache. Gating on SSE clients froze the
+  // summary at boot for every plain fetch consumer. Measured full tick ~11.5ms.
   computeDashboardSummary().then((summary) => {
     summaryCache.data = summary;
     summaryCache.computedAt = Date.now();
-    broadcastSSE(summary);
+    if (sseClients.size) broadcastSSE(summary);
   }).catch((e) => console.error('[truth-tick]', e.message));
 }, TRUTH_TICK_MS);
 
@@ -257,7 +259,9 @@ function getMemory() {
 /** Map a truth-layer run state onto the roster vocabulary the UI already speaks. */
 function rosterStatusFromRunState(state) {
   if (state === 'ACTIVE') return 'working';
-  if (state === 'WAITING') return 'waiting';
+  if (state === 'WAITING' || state === 'DELIVERING') return 'waiting';
+  if (state === 'CANCELLED') return 'idle';
+  if (state === 'STUCK') return 'failed';
   if (state === 'ERROR' || state === 'UNDELIVERED') return 'failed';
   return 'idle';
 }
@@ -272,7 +276,7 @@ function getLiveStatus() {
 
   for (const r of runs) {
     if (!r.agentId) continue;
-    const status = rosterStatusFromRunState(r.state);
+    const status = r.stale ? 'failed' : rosterStatusFromRunState(r.state);
     // If an agent somehow owns several live runs, 'working' wins over 'waiting'.
     if (agents[r.agentId] && agents[r.agentId].status === 'working') continue;
     agents[r.agentId] = {
@@ -281,6 +285,7 @@ function getLiveStatus() {
       runId: r.runId,
       taskId: r.taskId,
       startedAt: r.startedAt ? new Date(r.startedAt).toISOString() : null,
+      lastInteractionAt: r.startedAt ? new Date(r.startedAt).toISOString() : null,
       ageMs: r.elapsedMs,
       kind: r.runtime,
     };
@@ -297,6 +302,7 @@ function getLiveStatus() {
       runId: lr.runId,
       taskId: null,
       startedAt: new Date(lr.startedAt).toISOString(),
+      lastInteractionAt: new Date(lr.startedAt).toISOString(),
       ageMs: lr.elapsedMs,
       kind: 'agent_turn',
     };
@@ -306,7 +312,7 @@ function getLiveStatus() {
   // than left absent, so the UI never has to guess at a missing key.
   for (const a of getAgents()) {
     if (!agents[a.id]) {
-      agents[a.id] = { status: 'idle', rawStatus: 'NO_LIVE_RUN', runId: null, taskId: null, startedAt: null, ageMs: null, kind: null };
+      agents[a.id] = { status: 'idle', rawStatus: 'NO_LIVE_RUN', runId: null, taskId: null, startedAt: null, lastInteractionAt: null, ageMs: null, kind: null };
     }
   }
 
@@ -319,7 +325,7 @@ function getLiveStatus() {
     generatedAt: new Date().toISOString(),
     dataSource: 'openclaw state db (task_runs)',
     snapshotFetchedAt: new Date().toISOString(),
-    snapshotError: null,
+    snapshotError: truth.getLastError(),
     warnings: violations.map((v) => ({ invariant: v.invariant, count: v.count, detail: v.detail })),
   });
 }
@@ -327,13 +333,18 @@ function getLiveStatus() {
 /** Shape a truth mission into the record shape the dashboard already renders. */
 function missionRecordFromTruth(m) {
   const failed = m.agents.some((a) => a.state === 'ERROR' || a.state === 'UNDELIVERED');
-  const running = m.agents.some((a) => a.state === 'ACTIVE' || a.state === 'WAITING');
+  const running = m.agents.some((a) => a.state === 'ACTIVE' || a.state === 'WAITING' || a.state === 'DELIVERING');
   const status = running ? 'running' : failed ? 'failed' : 'done';
   const primary = m.agents[0] || {};
   return {
     id: m.missionId,
     agent: primary.agentId || null,
+    name: primary.label || primary.agentId || 'mission',
     label: primary.label || primary.agentId || 'mission',
+    channel: 'runtime',
+    subagentCount: m.agents.length,
+    // Token totals are not recorded per task_run; 0 keeps arithmetic safe.
+    tokens: 0,
     goal: (m.goal || '').slice(0, 250),
     status,
     startedAt: m.createdAt ? new Date(m.createdAt).toISOString() : null,
@@ -366,6 +377,12 @@ function computeDashboardSummary() {
     const tool = currentTools[r.runId];
     return {
       id: r.taskId,
+      // The office/panel views key and label off these; omitting them rendered
+      // undefined names, blank React keys, and every agent miscategorized.
+      sessionKey: r.childSessionKey || r.taskId,
+      agentId: r.agentId,
+      agentName: r.agentId === 'main' ? 'J.A.R.V.I.S.' : (r.label || r.agentId),
+      tokens: 0,
       agent: r.agentId,
       label: r.label || r.agentId,
       // Real current verb from a real in-flight tool call, or the plain run state.
@@ -386,6 +403,8 @@ function computeDashboardSummary() {
       const rec = missionRecordFromTruth(m);
       return {
         id: rec.id,
+        sessionKey: rec.id,
+        tokens: 0,
         agent: rec.agent,
         label: rec.label,
         goal: rec.goal,
@@ -476,14 +495,14 @@ const server = http.createServer(async (req, res) => {
       const current = truth.getCurrentActivityByRun(all.map((r) => r.runId).filter(Boolean));
       return sendJson(res, 200, {
         activeCount: all.filter((r) => r.state === 'ACTIVE').length,
-        runs: all.map((r) => ({ ...r, currentTool: current[r.runId] || null })),
+        runs: all.map((r) => ({ ...r, task: (r.task || '').slice(0, 250), currentTool: current[r.runId] || null })),
       });
     }
 
     if (req.method === 'GET' && url.pathname === '/api/metrics') {
       return sendJson(res, 200, {
         today: truth.getTodayMetrics(),
-        toolLatencies: truth.getToolLatencies(Date.now() - 24 * 60 * 60 * 1000).length,
+        toolLatencies: truth.getTodayMetrics().toolCalls,
       });
     }
 
